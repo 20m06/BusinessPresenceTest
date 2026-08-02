@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getOffers } from "@/lib/offers";
+import { Receipt } from "./receipt";
 
 // Minimal report view (Phase 5). The full receipt-style report with the
 // complete findings page arrives in Phase 6.
@@ -150,40 +151,38 @@ export default function ReportPage({
               })}
             </p>
 
-            <div className="mt-8 border border-rule bg-white p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-muted">
-                Overall score
-              </p>
-              <p className="font-mono text-6xl font-semibold mt-1">
-                {payload.scores.overall !== null ? Math.round(payload.scores.overall * 10) / 10 : "—"}
-                <span className="text-2xl text-muted">/100</span>
-              </p>
-              {payload.scores.coveragePct !== null && payload.scores.coveragePct < 100 && (
-                <p className="mt-2 text-sm text-muted">
-                  Scored on {Math.round(payload.scores.coveragePct)}% of checks.
-                  Answering a few questions completes it — coming in the next
-                  update.
-                </p>
-              )}
-            </div>
+            <Receipt
+              businessName={payload.business?.name ?? ""}
+              cityState={[payload.business?.city, payload.business?.state]
+                .filter(Boolean)
+                .join(", ")}
+              dateLabel={new Date(payload.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+              lines={[
+                { label: "found", score: payload.scores.discoverability },
+                { label: "converts", score: payload.scores.conversion },
+                { label: "reviews", score: payload.scores.socialProof },
+                { label: "website", score: payload.scores.technicalHealth },
+                { label: "control", score: payload.scores.resilience },
+              ]}
+              overall={payload.scores.overall}
+              coveragePct={payload.scores.coveragePct}
+            />
 
-            <ul className="mt-6 border border-rule bg-white divide-y divide-rule font-mono text-sm">
-              {(
-                [
-                  ["Being found", payload.scores.discoverability],
-                  ["Turning visits into customers", payload.scores.conversion],
-                  ["Reviews and reputation", payload.scores.socialProof],
-                  ["Website health", payload.scores.technicalHealth],
-                  ["Control of your accounts", payload.scores.resilience],
-                ] as Array<[string, number | null]>
-              ).map(([label, score]) => (
-                <li key={label} className="flex justify-between p-3">
-                  <span>{label}</span>
-                  <span className={score === null ? "text-muted" : ""}>
-                    {score === null ? "not yet scored" : Math.round(score)}
-                  </span>
-                </li>
-              ))}
+            <ul className="mt-6 text-sm text-muted space-y-1">
+              <li>found — can customers find you on Google</li>
+              <li>converts — can a visit turn into a sale</li>
+              <li>reviews — your reputation on Google</li>
+              <li>website — does your site load fast and work on phones</li>
+              <li>
+                control — do you hold your own keys{" "}
+                <span className="font-mono text-xs">
+                  (not yet scored — a few questions, coming soon)
+                </span>
+              </li>
             </ul>
 
             {payload.topFixes.length > 0 && (
@@ -232,6 +231,15 @@ export default function ReportPage({
                 <p className="mt-3 font-mono text-xs text-muted">{offers.clubLine}</p>
               )}
             </div>
+
+            <p className="mt-8">
+              <Link
+                href={`/report/${token}/details`}
+                className="underline underline-offset-4"
+              >
+                See every check we ran →
+              </Link>
+            </p>
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -11,12 +11,17 @@ const US_STATES = [
 ];
 
 export default function Home() {
-  const [notice, setNotice] = useState(false);
+  const router = useRouter();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Phase 1: no backend yet. Search connects in Phase 3.
-    setNotice(true);
+    const form = new FormData(e.currentTarget);
+    const name = String(form.get("businessName") ?? "").trim();
+    const city = String(form.get("city") ?? "").trim();
+    const state = String(form.get("state") ?? "").trim();
+    if (!name || !city || !state) return;
+    const params = new URLSearchParams({ name, city, state });
+    router.push(`/searching?${params.toString()}`);
   }
 
   return (
@@ -35,7 +40,7 @@ export default function Home() {
           the three fixes that matter most. Free.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8" noValidate>
+        <form onSubmit={handleSubmit} className="mt-8">
           <div className="border border-rule bg-white">
             <div className="p-4 border-b border-rule">
               <label
@@ -111,13 +116,6 @@ export default function Home() {
           <p className="mt-3 font-mono text-xs text-muted">
             Takes about a minute. No sign-up.
           </p>
-
-          {notice && (
-            <p role="status" className="mt-4 text-sm text-warn">
-              Search is not connected yet. This is an early preview — the
-              working version is coming soon.
-            </p>
-          )}
         </form>
       </div>
 

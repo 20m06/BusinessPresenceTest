@@ -28,9 +28,11 @@ function AuditNewInner() {
           placeId,
           email: String(form.get("email") ?? "").trim(),
           role: null,
-          consentEmailReport: form.get("consentEmail") === "on",
-          consentFollowup: form.get("consentFollowup") === "on",
-          consentResearch: form.get("consentResearch") === "on",
+          // Requesting the report is the consent — disclosed in the
+          // small print below the button and in /privacy.
+          consentEmailReport: true,
+          consentFollowup: true,
+          consentResearch: true,
         }),
       });
       const data = await res.json();
@@ -89,27 +91,6 @@ function AuditNewInner() {
           />
         </div>
 
-        <fieldset className="mt-4 space-y-3">
-          <legend className="sr-only">Consent choices</legend>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" name="consentEmail" defaultChecked className="mt-1" />
-            <span className="text-sm">Email me this report</span>
-          </label>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" name="consentFollowup" className="mt-1" />
-            <span className="text-sm">
-              Re-check my business in 30 and 90 days and email me what changed
-            </span>
-          </label>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" name="consentResearch" className="mt-1" />
-            <span className="text-sm">
-              Include my anonymized results in aggregate research about small
-              business web presence
-            </span>
-          </label>
-        </fieldset>
-
         <button
           type="submit"
           disabled={submitting}
@@ -124,11 +105,16 @@ function AuditNewInner() {
           </p>
         )}
 
-        <p className="mt-4 font-mono text-xs text-muted">
-          We only read public information.{" "}
+        <p className="mt-4 text-xs text-muted leading-relaxed">
+          By requesting the report you agree that we email it to you, that we
+          may automatically re-check this business's public listing and website
+          around 30 and 90 days from now, and that anonymized results may be
+          included in aggregate research. We only read public information —
+          details in our{" "}
           <Link href="/privacy" className="underline underline-offset-2">
-            Privacy
+            privacy note
           </Link>
+          .
         </p>
       </form>
     </div>

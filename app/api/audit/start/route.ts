@@ -148,13 +148,22 @@ export async function POST(request: NextRequest) {
       .single();
     if (auditErr || !audit) throw new Error(`audit insert failed: ${auditErr?.message}`);
 
-    // Schedule day-30 / day-90 re-runs.
-    const due = (days: number) =>
-      new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10);
-    await db.from("scheduled_runs").insert([
-      { business_id: biz.id, contact_id: contact.id, run_type: "day_30", due_on: due(30) },
-      { business_id: biz.id, contact_id: contact.id, run_type: "day_90", due_on: due(90) },
-    ]);
+    // Schedule day-30 / day-90 re-runs — only on this business's FIRST
+    // audit. A repeat lookup must not stack additional re-runs on top of
+    // the ones already ticking from the first check.
+    const { data: existingRuns } = await db
+      .from("scheduled_runs")
+      .select("id")
+      .eq("business_id", biz.id)
+      .limit(1);
+    if (!existingRuns || existingRuns.length === 0) {
+      const due = (days: number) =>
+        new Date(Date.now() + days * 86400_000).toISOString().slice(0, 10);
+      await db.from("scheduled_runs").insert([
+        { business_id: biz.id, contact_id: contact.id, run_type: "day_30", due_on: due(30) },
+        { business_id: biz.id, contact_id: contact.id, run_type: "day_90", due_on: due(90) },
+      ]);
+    }
 
     await Promise.all([
       bumpIpCounter(ipHash),

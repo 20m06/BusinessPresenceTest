@@ -2,6 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { getOffers } from "@/lib/offers";
 
 // Minimal report view (Phase 5). The full receipt-style report with the
 // complete findings page arrives in Phase 6.
@@ -79,7 +80,7 @@ export default function ReportPage({
     };
   }, [token]);
 
-  const calendlyUrl = process.env.NEXT_PUBLIC_CALENDLY_URL;
+  const offers = getOffers();
 
   return (
     <main className="flex-1 flex flex-col">
@@ -188,7 +189,7 @@ export default function ReportPage({
             {payload.topFixes.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  Your three highest-impact fixes this week
+                  Your highest-impact fixes this week
                 </h2>
                 <ol className="mt-4 space-y-4">
                   {payload.topFixes.map((fix, i) => (
@@ -206,17 +207,31 @@ export default function ReportPage({
               </div>
             )}
 
-            {calendlyUrl && (
-              <div className="mt-8 border border-rule bg-white p-5">
-                <p className="font-medium">Want these fixed for you?</p>
-                <a
-                  href={calendlyUrl}
-                  className="mt-3 inline-block px-6 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
-                >
-                  Book a free 20-minute review
-                </a>
-              </div>
-            )}
+            <div className="mt-8 border border-rule bg-white p-5">
+              <p className="font-medium">
+                {payload.topFixes.length > 0 ? offers.headline : offers.perfectHeadline}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {payload.topFixes.length > 0 ? offers.lead : offers.perfectLead}
+              </p>
+              <ul className="mt-4 space-y-3">
+                {offers.services.map((s) => (
+                  <li key={s.name}>
+                    <p className="text-sm font-medium">{s.name}</p>
+                    <p className="text-sm text-muted">{s.description}</p>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={offers.calendlyUrl}
+                className="mt-5 inline-block px-6 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
+              >
+                {offers.buttonLabel}
+              </a>
+              {offers.clubLine && (
+                <p className="mt-3 font-mono text-xs text-muted">{offers.clubLine}</p>
+              )}
+            </div>
           </div>
         )}
       </div>

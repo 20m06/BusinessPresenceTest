@@ -21,15 +21,17 @@ export default function PrivacyPage() {
             prevent abuse.
           </p>
           <p>
-            <strong>Why.</strong> To show you your report, email you a copy if
-            you asked for one, and — only if you checked the box — re-check your
-            business at 30 and 90 days and email you what changed.
+            <strong>Why.</strong> To show you your report and email you a copy.
+            After a business's first audit, we automatically re-check its
+            public listing and website around 30 and 90 days later to measure
+            what changed. These re-checks read the same public information —
+            nothing more — and don't send you email.
           </p>
           <p>
-            <strong>Research.</strong> If you checked the research box, your
-            results may be included in aggregate statistics (for example,
-            "businesses that added photos saw X"). Never your name, never your
-            email, never anything identifying your business.
+            <strong>Research.</strong> Results may be included in aggregate
+            statistics (for example, "businesses that added photos saw X").
+            Never your name, never your email, never anything identifying your
+            business.
           </p>
           <p>
             <strong>Deletion.</strong> Email us and we'll delete your data —

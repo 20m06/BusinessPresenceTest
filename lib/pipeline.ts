@@ -5,6 +5,7 @@ import { runPagespeed } from "./clients/psi";
 import { getServiceClient } from "./supabase";
 import { evaluateAudit } from "./scoring/engine";
 import {
+  normalizeApple,
   normalizePlace,
   normalizePsi,
   normalizeSite,
@@ -12,6 +13,7 @@ import {
   type RawPsi,
   type RawSiteFetch,
 } from "./scoring/normalize";
+import { lookupOnAppleMaps } from "./clients/apple-maps";
 import { analyzeSiteHtml, type SiteSignals } from "./site-analysis";
 import { sendAuditNotification } from "./email";
 import { getTopFixes } from "./top-fixes";
@@ -39,6 +41,24 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
     const websiteUri =
       rawPlace && typeof rawPlace.websiteUri === "string" ? rawPlace.websiteUri : null;
 
+    // Apple Maps runs regardless of whether there's a website; it's a
+    // check on the listing, not the site. No-ops without credentials.
+    const { data: bizRow } = await db
+      .from("businesses")
+      .select("name, city, state, postal_code, latitude, longitude")
+      .eq("id", audit.business_id)
+      .single();
+    const applePromise = bizRow
+      ? lookupOnAppleMaps({
+          name: bizRow.name,
+          latitude: bizRow.latitude,
+          longitude: bizRow.longitude,
+          postalCode: bizRow.postal_code,
+          city: bizRow.city,
+          state: bizRow.state,
+        })
+      : Promise.resolve(null);
+
     let siteFetch: RawSiteFetch | null = null;
     let signals: SiteSignals | null = null;
     let rawPsi: RawPsi | null = null;
@@ -52,11 +72,13 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
       }
       rawPsi = (await psiPromise) as RawPsi | null;
     }
+    const appleLookup = await applePromise;
 
     const place = normalizePlace(rawPlace);
     const site = normalizeSite(websiteUri, siteFetch, signals);
     const psi = normalizePsi(rawPsi);
-    const scores = evaluateAudit({ place, site, psi, manual: {}, now: new Date() });
+    const apple = normalizeApple(appleLookup);
+    const scores = evaluateAudit({ place, site, psi, apple, manual: {}, now: new Date() });
 
     const checkRows = scores.checks.map((c) => ({
       audit_id: audit.id,
@@ -95,6 +117,8 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
         automated_coverage_pct: round(scores.automatedCoveragePct),
         has_website: site.hasWebsite,
         website_url_checked: siteFetch?.finalUrl ?? websiteUri,
+        apple_listing_found: apple.checked ? apple.found : null,
+        apple_matched_name: apple.matchedName,
         review_count: place.reviewCount,
         average_rating: place.rating,
         photo_count: place.photoCount,

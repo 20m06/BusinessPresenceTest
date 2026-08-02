@@ -1,7 +1,11 @@
 // Scoring configuration — CLAUDE.md §6. Every weight and threshold lives
 // HERE and nowhere else. Never change values without bumping the version.
 
-export const SCORING_CONFIG_VERSION = "1.0.1";
+// 2.0.0: Apple Maps presence joins Discoverability. Being listed on Apple
+// Maps now carries the same weight as being listed on Google (0.20 each),
+// and the other Google checks were scaled to keep the dimension at 1.0.
+// Scores from 1.x are NOT comparable to 2.x.
+export const SCORING_CONFIG_VERSION = "2.0.0";
 
 // When a business has no website at all, the six Technical Health checks
 // are not six separate problems — they are one. This finding replaces them
@@ -67,18 +71,30 @@ export interface CheckDef {
 
 export const CHECKS: Record<string, CheckDef> = {
   // ── Discoverability (35%) ──────────────────────────────────────────
+  // Weights: the two "does your listing exist" checks are deliberately
+  // equal (Google 0.20, Apple 0.20); the remaining Google detail checks
+  // share the other 0.60.
   gbp_exists: {
     dimension: "discoverability",
-    weight: 0.25,
+    weight: 0.2,
     label: "Google profile found",
     fixCostBucket: "hours",
     fixTitle: "Create your Google Business Profile",
     fixInstruction:
       "Go to google.com/business and claim your free profile. This is how customers find you on Google Maps.",
   },
+  apple_listing_found: {
+    dimension: "discoverability",
+    weight: 0.2,
+    label: "Apple Maps listing found",
+    fixCostBucket: "hours",
+    fixTitle: "Add your business to Apple Maps",
+    fixInstruction:
+      "Go to businessconnect.apple.com and claim your free listing. Every iPhone uses Apple Maps by default, and most small businesses have never claimed theirs.",
+  },
   gbp_claimed: {
     dimension: "discoverability",
-    weight: 0.15,
+    weight: 0.12,
     label: "Profile appears claimed",
     fixCostBucket: "hours",
     fixTitle: "Claim your Google Business Profile",
@@ -87,7 +103,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   category_specific: {
     dimension: "discoverability",
-    weight: 0.15,
+    weight: 0.12,
     label: "Category is specific",
     fixCostBucket: "minutes",
     fixTitle: "Pick a more specific category",
@@ -96,7 +112,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   hours_present: {
     dimension: "discoverability",
-    weight: 0.2,
+    weight: 0.16,
     label: "Hours listed",
     fixCostBucket: "minutes",
     fixTitle: "Add your opening hours",
@@ -105,7 +121,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   hours_special: {
     dimension: "discoverability",
-    weight: 0.05,
+    weight: 0.04,
     label: "Holiday hours set",
     fixCostBucket: "minutes",
     fixTitle: "Set holiday hours",
@@ -114,7 +130,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   phone_present: {
     dimension: "discoverability",
-    weight: 0.08,
+    weight: 0.064,
     label: "Phone number listed",
     fixCostBucket: "minutes",
     fixTitle: "Add your phone number",
@@ -122,7 +138,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   photos_count: {
     dimension: "discoverability",
-    weight: 0.12,
+    weight: 0.096,
     label: "Photos on profile",
     fixCostBucket: "hours",
     fixTitle: "Add photos to your profile",

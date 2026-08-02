@@ -138,8 +138,28 @@ export function isHolidayWithin(now: Date, windowDays: number): boolean {
 // ── The engine ───────────────────────────────────────────────────────
 
 export function evaluateAudit(inputs: AuditInputs): AuditScores {
-  const { place, site, psi, manual, now } = inputs;
+  const { place, site, psi, apple, manual, now } = inputs;
   const checks: CheckResult[] = [];
+
+  // Apple Maps presence — independent of the Google profile, since a
+  // business can be on one map and missing from the other. Marked
+  // 'inferred' because matching a name and location across two providers
+  // is a judgement, not a lookup by shared id.
+  checks.push(
+    make("apple_listing_found", {
+      score: !apple?.checked ? null : apple.found ? 100 : 0,
+      status: !apple?.checked ? "unavailable" : undefined,
+      confidence: "inferred",
+      rawValue: apple
+        ? {
+            found: apple.found,
+            matchedName: apple.matchedName,
+            distanceMeters: apple.distanceMeters,
+            reason: apple.reason,
+          }
+        : { reason: "apple_not_configured" },
+    })
+  );
 
   // ── Discoverability ────────────────────────────────────────────────
   const gbpFound = place.found;

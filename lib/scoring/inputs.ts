@@ -34,6 +34,16 @@ export interface SiteInput {
   viewportMetaPresent: boolean;
 }
 
+export interface AppleInput {
+  // false when credentials are absent or the lookup failed — the check
+  // then reads 'unavailable' and leaves the math alone, never scoring 0.
+  checked: boolean;
+  found: boolean;
+  matchedName: string | null;
+  distanceMeters: number | null;
+  reason: string | null;
+}
+
 export interface PsiInput {
   available: boolean;
   performance: number | null; // 0-100
@@ -48,6 +58,7 @@ export interface AuditInputs {
   place: PlaceInput;
   site: SiteInput;
   psi: PsiInput;
+  apple?: AppleInput;
   manual: Partial<Record<string, ManualAnswer>>;
   now: Date;
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
-import { EFFORT_LABELS, type FixCostBucket } from "@/lib/scoring/config";
+import { getTopFixes, type TopFix } from "@/lib/top-fixes";
 
 export async function GET(
   _request: NextRequest,
@@ -26,27 +26,9 @@ export async function GET(
     .eq("id", audit.business_id)
     .single();
 
-  let topFixes: Array<{
-    title: string;
-    instruction: string;
-    effort: string;
-    dimension: string;
-  }> = [];
+  let topFixes: TopFix[] = [];
   if (audit.status === "complete") {
-    const { data: checks } = await db
-      .from("audit_checks")
-      .select("fix_title, fix_instruction, fix_cost_bucket, dimension, priority_ratio, status")
-      .eq("audit_id", audit.id)
-      .in("status", ["warn", "fail"])
-      .not("priority_ratio", "is", null)
-      .order("priority_ratio", { ascending: false })
-      .limit(3);
-    topFixes = (checks ?? []).map((c) => ({
-      title: c.fix_title,
-      instruction: c.fix_instruction,
-      effort: EFFORT_LABELS[c.fix_cost_bucket as FixCostBucket] ?? c.fix_cost_bucket,
-      dimension: c.dimension,
-    }));
+    topFixes = await getTopFixes(audit.id, audit.has_website);
   }
 
   return NextResponse.json({

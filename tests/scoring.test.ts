@@ -102,6 +102,39 @@ describe("no website (CLAUDE.md §6.6)", () => {
     expect(tel?.status).toBe("unavailable");
     expect(tel?.normalizedScore).toBeNull();
   });
+
+  it("leads with 'create your website' before any other fix", () => {
+    expect(result.topFixes[0].checkKey).toBe("site_reachable");
+    expect(result.topFixes[0].fixTitle).toBe("Create your website");
+  });
+
+  it("never advises fixing a website that doesn't exist", () => {
+    const impossible = ["https_valid", "mobile_viewport", "psi_performance", "psi_accessibility", "psi_seo", "gbp_website_link"];
+    for (const key of result.topFixes.map((f) => f.checkKey)) {
+      expect(impossible).not.toContain(key);
+    }
+  });
+
+  it("still scores those checks 0 so the dimension math is unchanged", () => {
+    const https = result.checks.find((c) => c.checkKey === "https_valid");
+    expect(https?.normalizedScore).toBe(0);
+    expect(https?.status).toBe("fail");
+    expect(https?.priorityRatio).toBeNull(); // scored, but emits no advice
+  });
+
+  it("keeps the website finding first even when a cheap fix outranks it", () => {
+    // Missing hours is a 2-minute fix worth more points; it must still
+    // come second, because it can't be done through a site that doesn't exist.
+    const withGaps = evaluateAudit(
+      inputs({
+        site: noSite,
+        place: { ...healthyPlace, websiteUri: null, daysWithHours: 0 },
+        psi: { available: false, performance: null, accessibility: null, seo: null, lcpMs: null },
+      })
+    );
+    expect(withGaps.topFixes[0].checkKey).toBe("site_reachable");
+    expect(withGaps.topFixes[1].checkKey).toBe("hours_present");
+  });
 });
 
 describe("no Google profile", () => {

@@ -14,7 +14,8 @@ import {
 } from "./scoring/normalize";
 import { analyzeSiteHtml, type SiteSignals } from "./site-analysis";
 import { sendAuditNotification } from "./email";
-import { DIMENSION_LABELS, EFFORT_LABELS, type Dimension, type FixCostBucket } from "./scoring/config";
+import { getTopFixes } from "./top-fixes";
+import { DIMENSION_LABELS, type Dimension } from "./scoring/config";
 
 // The audit processing pipeline, shared by the public process route and
 // the cron re-run system. Idempotent per audit row.
@@ -114,7 +115,7 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
     if (psiCalls > 0) await bumpUsage({ psi: psiCalls });
 
     // Email notification — never fails the audit.
-    await notifyForAudit(audit, scores.overall, {
+    await notifyForAudit(audit, scores.overall, site.hasWebsite, {
       discoverability: scores.dimensions.discoverability ?? null,
       conversion: scores.dimensions.conversion ?? null,
       social_proof: scores.dimensions.social_proof ?? null,
@@ -145,24 +146,18 @@ async function notifyForAudit(
     public_token: string;
   },
   overall: number | null,
+  hasWebsite: boolean,
   dims: Record<Dimension, number | null>
 ): Promise<void> {
   try {
     const db = getServiceClient();
-    const [{ data: business }, { data: contact }, { data: fixes }, { data: prev }] =
+    const [{ data: business }, { data: contact }, fixes, { data: prev }] =
       await Promise.all([
         db.from("businesses").select("name").eq("id", audit.business_id).single(),
         audit.contact_id
           ? db.from("contacts").select("email").eq("id", audit.contact_id).single()
           : Promise.resolve({ data: null }),
-        db
-          .from("audit_checks")
-          .select("fix_title, fix_cost_bucket")
-          .eq("audit_id", audit.id)
-          .in("status", ["warn", "fail"])
-          .not("priority_ratio", "is", null)
-          .order("priority_ratio", { ascending: false })
-          .limit(3),
+        getTopFixes(audit.id, hasWebsite),
         db
           .from("audits")
           .select("overall_score")
@@ -187,10 +182,7 @@ async function notifyForAudit(
         label: DIMENSION_LABELS[d],
         score: dims[d],
       })),
-      topFixes: (fixes ?? []).map((f) => ({
-        title: f.fix_title as string,
-        effort: EFFORT_LABELS[f.fix_cost_bucket as FixCostBucket] ?? "",
-      })),
+      topFixes: fixes.map((f) => ({ title: f.title, effort: f.effort })),
       reportUrl: `${siteUrl}/report/${audit.public_token}`,
     });
   } catch (err) {

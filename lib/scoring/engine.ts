@@ -14,6 +14,7 @@ import {
   HOLIDAY_WINDOW_DAYS,
   HOURS_PARTIAL_SCORE,
   HOURS_SPECIAL_WARN_SCORE,
+  NO_WEBSITE_FIX,
   PHOTO_TIERS,
   RATING_TIERS,
   RECENCY_TIERS,
@@ -71,6 +72,11 @@ interface Raw {
   status?: CheckStatus; // defaults to statusFromScore
   confidence: Confidence;
   rawValue: unknown;
+  // Still scored, but emits no fix — used when the advice would be
+  // impossible to act on (see NO_WEBSITE_FIX).
+  suppressFix?: boolean;
+  fixTitle?: string;
+  fixInstruction?: string;
 }
 
 function make(checkKey: string, raw: Raw): CheckResult {
@@ -79,7 +85,8 @@ function make(checkKey: string, raw: Raw): CheckResult {
   const status =
     raw.status ?? (score === null ? "unavailable" : statusFromScore(score));
   const scoreable = score !== null && status !== "unavailable";
-  const impact = scoreable
+  const ranked = scoreable && !raw.suppressFix;
+  const impact = ranked
     ? DIMENSION_WEIGHTS[def.dimension] * def.weight * (100 - (score as number))
     : null;
   const effort = EFFORT_SCORES[def.fixCostBucket];
@@ -94,10 +101,10 @@ function make(checkKey: string, raw: Raw): CheckResult {
     confidence: raw.confidence,
     fixCostBucket: def.fixCostBucket,
     impactPoints: impact,
-    effortScore: scoreable ? effort : null,
+    effortScore: ranked ? effort : null,
     priorityRatio: impact !== null ? impact / effort : null,
-    fixTitle: def.fixTitle,
-    fixInstruction: def.fixInstruction,
+    fixTitle: raw.fixTitle ?? def.fixTitle,
+    fixInstruction: raw.fixInstruction ?? def.fixInstruction,
   };
 }
 
@@ -239,6 +246,9 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
       status: gbpFound ? undefined : "unavailable",
       confidence: "verified",
       rawValue: { websiteUri: place.websiteUri },
+      // "Link your website on Google" is useless advice to a business that
+      // has no website — the create-a-website finding covers it instead.
+      suppressFix: !site.hasWebsite,
     })
   );
 
@@ -368,8 +378,20 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
   // ── Technical Health ───────────────────────────────────────────────
   if (!site.hasWebsite) {
     // The one place missing scores zero, not unavailable (CLAUDE.md §6.6).
+    // site_reachable carries the single "create your website" finding;
+    // the other five score 0 for the math but emit no advice, since you
+    // cannot speed up or secure a site that doesn't exist.
+    checks.push(
+      make("site_reachable", {
+        score: 0,
+        status: "fail",
+        confidence: "verified",
+        rawValue: { reason: "no_website" },
+        fixTitle: NO_WEBSITE_FIX.title,
+        fixInstruction: NO_WEBSITE_FIX.instruction,
+      })
+    );
     for (const key of [
-      "site_reachable",
       "https_valid",
       "mobile_viewport",
       "psi_performance",
@@ -382,6 +404,7 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
           status: "fail",
           confidence: "verified",
           rawValue: { reason: "no_website" },
+          suppressFix: true,
         })
       );
     }
@@ -445,7 +468,7 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
     checks.push(manualCheck(key, manual[key]));
   }
 
-  return compose(checks);
+  return compose(checks, { noWebsite: !site.hasWebsite });
 }
 
 function manualCheck(key: string, answer: ManualAnswer | undefined): CheckResult {
@@ -467,7 +490,10 @@ function manualCheck(key: string, answer: ManualAnswer | undefined): CheckResult
 
 // ── Composition (CLAUDE.md §6.10) ────────────────────────────────────
 
-export function compose(checks: CheckResult[]): AuditScores {
+export function compose(
+  checks: CheckResult[],
+  opts: { noWebsite?: boolean } = {}
+): AuditScores {
   const dimensions: Partial<Record<Dimension, number | null>> = {};
   let coveredWeight = 0;
   let totalWeight = 0;
@@ -497,7 +523,7 @@ export function compose(checks: CheckResult[]): AuditScores {
     }
   }
 
-  const topFixes = checks
+  const ranked = checks
     .filter(
       (c) =>
         c.priorityRatio !== null &&
@@ -506,6 +532,16 @@ export function compose(checks: CheckResult[]): AuditScores {
         c.status !== "manual_required"
     )
     .sort((a, b) => (b.priorityRatio as number) - (a.priorityRatio as number));
+
+  // Having a website is a prerequisite, not a competing option: nothing
+  // else on the list can be done through a site that doesn't exist, so it
+  // leads regardless of its impact-over-effort ratio.
+  const topFixes = opts.noWebsite
+    ? [
+        ...ranked.filter((c) => c.checkKey === "site_reachable"),
+        ...ranked.filter((c) => c.checkKey !== "site_reachable"),
+      ]
+    : ranked;
 
   return {
     version: SCORING_CONFIG_VERSION,

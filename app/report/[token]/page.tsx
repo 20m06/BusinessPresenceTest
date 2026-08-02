@@ -184,8 +184,8 @@ export default function ReportPage({
               <div className="mt-6 border border-rule bg-white p-4">
                 <p className="text-sm">
                   Your score is based on{" "}
-                  {Math.round(payload.scores.coveragePct)}% of checks. A few
-                  questions only you can answer complete it.
+                  {Math.round(payload.scores.coveragePct ?? 0)}% of checks. A
+                  few questions only you can answer complete it.
                 </p>
                 <Link
                   href={`/report/${token}/complete-audit`}

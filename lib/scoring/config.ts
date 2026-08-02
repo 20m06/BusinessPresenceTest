@@ -1,7 +1,18 @@
 // Scoring configuration — CLAUDE.md §6. Every weight and threshold lives
 // HERE and nowhere else. Never change values without bumping the version.
 
-export const SCORING_CONFIG_VERSION = "1.0.0";
+export const SCORING_CONFIG_VERSION = "1.0.1";
+
+// When a business has no website at all, the six Technical Health checks
+// are not six separate problems — they are one. This finding replaces them
+// at the top of the report; the individual checks still score 0 so the
+// dimension math is unchanged (§6.6), but they stop emitting advice that
+// is impossible to follow ("turn on HTTPS" for a site that doesn't exist).
+export const NO_WEBSITE_FIX = {
+  title: "Create your website",
+  instruction:
+    "Customers who find you on Google have nowhere to go to learn more. Even one page with your services, hours, and phone number would fix this.",
+};
 
 export type Dimension =
   | "discoverability"

@@ -29,6 +29,50 @@ const TEXT_SEARCH_FIELD_MASK = [
   "places.primaryType",
 ].join(",");
 
+// Place Details (New): GET /v1/places/{id}; unprefixed field mask.
+// Field list per CLAUDE.md §8.1 — request nothing extra (billing SKUs).
+const DETAILS_FIELD_MASK = [
+  "id",
+  "displayName",
+  "formattedAddress",
+  "addressComponents",
+  "location",
+  "primaryType",
+  "types",
+  "nationalPhoneNumber",
+  "websiteUri",
+  "regularOpeningHours",
+  "currentOpeningHours",
+  "rating",
+  "userRatingCount",
+  "reviews",
+  "photos",
+  "businessStatus",
+  "googleMapsUri",
+].join(",");
+
+export async function getPlaceDetails(placeId: string): Promise<Record<string, unknown>> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_MAPS_API_KEY is not set.");
+  }
+  const res = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": DETAILS_FIELD_MASK,
+      },
+      signal: AbortSignal.timeout(10_000),
+    }
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Place Details failed: HTTP ${res.status} ${body.slice(0, 300)}`);
+  }
+  return (await res.json()) as Record<string, unknown>;
+}
+
 export async function searchPlacesText(query: string): Promise<PlaceCandidate[]> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {

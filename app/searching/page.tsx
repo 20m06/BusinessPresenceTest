@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Candidate {
   placeId: string;
@@ -19,6 +19,7 @@ type State =
 
 function SearchingInner() {
   const params = useSearchParams();
+  const router = useRouter();
   const name = params.get("name") ?? "";
   const city = params.get("city") ?? "";
   const stateAbbr = params.get("state") ?? "";
@@ -138,7 +139,15 @@ function SearchingInner() {
                 <li key={c.placeId}>
                   <button
                     type="button"
-                    onClick={() => setSelected(c.placeId)}
+                    onClick={() => {
+                      setSelected(c.placeId);
+                      const q = new URLSearchParams({
+                        placeId: c.placeId,
+                        name: c.name,
+                        address: c.address,
+                      });
+                      router.push(`/audit/new?${q.toString()}`);
+                    }}
                     aria-pressed={selected === c.placeId}
                     className={`w-full text-left p-4 hover:bg-paper ${
                       selected === c.placeId ? "bg-paper" : ""
@@ -158,8 +167,7 @@ function SearchingInner() {
 
             {selected && (
               <p role="status" className="mt-4 text-sm text-pass">
-                Got it. The audit itself is the next thing we build — this
-                confirms search works end to end.
+                Got it — one more step.
               </p>
             )}
 

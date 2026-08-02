@@ -51,7 +51,9 @@ export async function POST(
   const db = getServiceClient();
   const { data: audit } = await db
     .from("audits")
-    .select("id, status, raw_places, raw_psi, raw_site")
+    .select(
+      "id, status, raw_places, raw_psi, raw_site, apple_listing_found, apple_matched_name"
+    )
     .eq("public_token", token)
     .maybeSingle();
   if (!audit) {
@@ -100,6 +102,15 @@ export async function POST(
       place: normalizePlace(rawPlace),
       site: normalizeSite(websiteUri, rawSite, rawSite?.signals ?? null),
       psi: normalizePsi(rawPsi),
+      // Replay the stored Apple verdict rather than re-querying Apple, so
+      // answering questions can never move the automated part of the score.
+      apple: {
+        checked: audit.apple_listing_found !== null,
+        found: audit.apple_listing_found === true,
+        matchedName: audit.apple_matched_name,
+        distanceMeters: null,
+        reason: audit.apple_listing_found === null ? "apple_not_configured" : null,
+      },
       manual,
       now: new Date(),
     });

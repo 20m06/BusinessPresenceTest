@@ -53,6 +53,8 @@ const UNAVAILABLE_REASONS: Record<string, string> = {
   no_google_profile: "no Google profile to read",
   no_website: "no website to read",
   site_unreadable: "we couldn't read the site",
+  apple_not_configured: "Apple Maps checking isn't switched on",
+  apple_lookup_failed: "we couldn't reach Apple Maps",
 };
 
 function describeRaw(row: CheckRow): string | null {
@@ -80,6 +82,11 @@ function describeRaw(row: CheckRow): string | null {
           ? "special hours found"
           : "a holiday is coming and no special hours are set"
         : "no holiday in the next 60 days";
+    case "apple_listing_found":
+      if (r.reason) return UNAVAILABLE_REASONS[String(r.reason)] ?? null;
+      return r.found
+        ? `found on Apple Maps as "${r.matchedName}"`
+        : "no matching listing on Apple Maps — iPhone users can't find you there";
     case "gbp_claimed":
       return r.signalCount != null ? `${r.signalCount}/5 signals of an active owner` : null;
     case "phone_present":

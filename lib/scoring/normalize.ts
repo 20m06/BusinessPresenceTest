@@ -1,7 +1,7 @@
 // Map raw API responses to the engine's normalized inputs.
 // Pure functions — testable against fixture JSON.
 
-import type { PlaceInput, PsiInput, SiteInput } from "./inputs";
+import type { AppleInput, PlaceInput, PsiInput, SiteInput } from "./inputs";
 import type { SiteSignals } from "../site-analysis";
 
 // Shape of the subset of Places (New) Place Details we request.
@@ -134,6 +134,43 @@ export function normalizeSite(
     transactionPath: signals?.transactionPath ?? { found: false, kind: null, host: null },
     contactFormPresent: !!signals?.contactFormPresent,
     viewportMetaPresent: !!signals?.viewportMetaPresent,
+  };
+}
+
+export interface RawAppleLookup {
+  configured: boolean;
+  searched: boolean;
+  found: boolean;
+  matchedName: string | null;
+  distanceMeters: number | null;
+  error: string | null;
+}
+
+export function normalizeApple(raw: RawAppleLookup | null): AppleInput {
+  if (!raw || !raw.configured) {
+    return {
+      checked: false,
+      found: false,
+      matchedName: null,
+      distanceMeters: null,
+      reason: "apple_not_configured",
+    };
+  }
+  if (!raw.searched || raw.error) {
+    return {
+      checked: false,
+      found: false,
+      matchedName: null,
+      distanceMeters: null,
+      reason: raw.error ?? "apple_lookup_failed",
+    };
+  }
+  return {
+    checked: true,
+    found: raw.found,
+    matchedName: raw.matchedName,
+    distanceMeters: raw.distanceMeters,
+    reason: null,
   };
 }
 

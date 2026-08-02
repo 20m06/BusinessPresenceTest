@@ -3,7 +3,7 @@ import { evaluateAudit, isHolidayWithin } from "../lib/scoring/engine";
 import type { AuditInputs, PlaceInput, PsiInput, SiteInput } from "../lib/scoring/inputs";
 import { analyzeSiteHtml } from "../lib/site-analysis";
 import { normalizePlace, normalizePsi } from "../lib/scoring/normalize";
-import { DIMENSION_WEIGHTS } from "../lib/scoring/config";
+import { CHECKS, DIMENSION_WEIGHTS } from "../lib/scoring/config";
 
 const NOW = new Date("2026-08-15T12:00:00Z");
 
@@ -56,6 +56,56 @@ function inputs(overrides: Partial<AuditInputs> = {}): AuditInputs {
     ...overrides,
   };
 }
+
+describe("Apple Maps presence", () => {
+  const onApple = { checked: true, found: true, matchedName: "Test Co", distanceMeters: 40, reason: null };
+  const notOnApple = { checked: true, found: false, matchedName: null, distanceMeters: null, reason: null };
+
+  it("weighs exactly the same as being on Google", () => {
+    const apple = CHECKS.apple_listing_found.weight;
+    const google = CHECKS.gbp_exists.weight;
+    expect(apple).toBe(google);
+  });
+
+  it("missing from Apple lowers the score without touching Google's checks", () => {
+    const on = evaluateAudit(inputs({ apple: onApple }));
+    const off = evaluateAudit(inputs({ apple: notOnApple }));
+    expect(off.overall as number).toBeLessThan(on.overall as number);
+    const gbp = off.checks.find((c) => c.checkKey === "gbp_exists");
+    expect(gbp?.normalizedScore).toBe(100);
+  });
+
+  it("is unavailable (never 0) when Apple isn't configured", () => {
+    const result = evaluateAudit(inputs());
+    const check = result.checks.find((c) => c.checkKey === "apple_listing_found");
+    expect(check?.status).toBe("unavailable");
+    expect(check?.normalizedScore).toBeNull();
+  });
+
+  it("is labelled inferred, since matching across providers is a judgement", () => {
+    const result = evaluateAudit(inputs({ apple: onApple }));
+    const check = result.checks.find((c) => c.checkKey === "apple_listing_found");
+    expect(check?.confidence).toBe("inferred");
+  });
+
+  it("suggests Apple Business Connect when the listing is missing", () => {
+    const result = evaluateAudit(inputs({ apple: notOnApple }));
+    const fix = result.topFixes.find((f) => f.checkKey === "apple_listing_found");
+    expect(fix?.fixInstruction).toContain("businessconnect.apple.com");
+  });
+});
+
+describe("dimension weights", () => {
+  it("every dimension's check weights still sum to 1.0", () => {
+    const sums: Record<string, number> = {};
+    for (const def of Object.values(CHECKS)) {
+      sums[def.dimension] = (sums[def.dimension] ?? 0) + def.weight;
+    }
+    for (const [dim, sum] of Object.entries(sums)) {
+      expect(`${dim}:${sum.toFixed(4)}`).toBe(`${dim}:1.0000`);
+    }
+  });
+});
 
 describe("healthy business", () => {
   const result = evaluateAudit(inputs());

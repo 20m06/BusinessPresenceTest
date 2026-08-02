@@ -13,7 +13,9 @@ function todayUtc(): string {
 }
 
 export function auditsEnabled(): boolean {
-  return process.env.AUDITS_ENABLED === "true";
+  // Kill switch: only an explicit "false" pauses audits. Unset means on,
+  // so a missing env var can't silently take the whole product down.
+  return process.env.AUDITS_ENABLED !== "false";
 }
 
 export async function checkCaps(ipHash: string): Promise<CapCheck> {

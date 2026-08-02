@@ -177,13 +177,24 @@ export default function ReportPage({
               <li>converts — can a visit turn into a sale</li>
               <li>reviews — your reputation on Google</li>
               <li>website — does your site load fast and work on phones</li>
-              <li>
-                control — do you hold your own keys{" "}
-                <span className="font-mono text-xs">
-                  (not yet scored — a few questions, coming soon)
-                </span>
-              </li>
+              <li>control — do you hold your own keys</li>
             </ul>
+
+            {payload.scores.resilience === null && (
+              <div className="mt-6 border border-rule bg-white p-4">
+                <p className="text-sm">
+                  Your score is based on{" "}
+                  {Math.round(payload.scores.coveragePct)}% of checks. A few
+                  questions only you can answer complete it.
+                </p>
+                <Link
+                  href={`/report/${token}/complete-audit`}
+                  className="mt-3 inline-block px-6 py-2.5 border border-ink font-medium hover:bg-ink hover:text-paper"
+                >
+                  Answer the questions
+                </Link>
+              </div>
+            )}
 
             {payload.topFixes.length > 0 && (
               <div className="mt-8">

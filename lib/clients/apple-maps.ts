@@ -1,5 +1,6 @@
 import "server-only";
 import { sign as cryptoSign } from "node:crypto";
+import { distanceMeters, matchNames } from "../apple-match";
 
 // Apple Maps Server API (CLAUDE.md §8, added v2.0.0).
 //
@@ -16,7 +17,11 @@ import { sign as cryptoSign } from "node:crypto";
 
 const TOKEN_URL = "https://maps-api.apple.com/v1/token";
 const SEARCH_URL = "https://maps-api.apple.com/v1/search";
-const MATCH_RADIUS_METERS = 300;
+// A fuzzy name match has to be close by to be believable; an exact name
+// match gets more room, since the two providers often pin the same
+// storefront a few hundred metres apart.
+const FUZZY_MATCH_RADIUS_METERS = 300;
+const EXACT_MATCH_RADIUS_METERS = 1500;
 
 export interface AppleLookup {
   configured: boolean;
@@ -87,42 +92,6 @@ interface ApplePlace {
   structuredAddress?: { postCode?: string; locality?: string };
 }
 
-function normalizeName(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9 ]/g, " ")
-    .replace(/\b(the|inc|llc|co|company|restaurant|cafe)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function namesMatch(a: string, b: string): boolean {
-  const x = normalizeName(a);
-  const y = normalizeName(b);
-  if (!x || !y) return false;
-  if (x === y || x.includes(y) || y.includes(x)) return true;
-  // Token overlap: at least half of the shorter name's words appear.
-  const xs = new Set(x.split(" "));
-  const ys = y.split(" ");
-  const shared = ys.filter((t) => xs.has(t)).length;
-  return shared >= Math.ceil(Math.min(xs.size, ys.length) / 2);
-}
-
-function distanceMeters(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
 export interface AppleLookupTarget {
   name: string;
   latitude: number | null;
@@ -168,7 +137,9 @@ export async function lookupOnAppleMaps(target: AppleLookupTarget): Promise<Appl
     const results = data.results ?? [];
 
     for (const place of results) {
-      if (!place.name || !namesMatch(place.name, target.name)) continue;
+      if (!place.name) continue;
+      const strength = matchNames(place.name, target.name);
+      if (!strength) continue;
 
       // Prefer a coordinate match; fall back to postal code when Google
       // gave us no coordinates.
@@ -183,7 +154,9 @@ export async function lookupOnAppleMaps(target: AppleLookupTarget): Promise<Appl
           { lat: target.latitude, lng: target.longitude },
           { lat: place.coordinate.latitude, lng: place.coordinate.longitude }
         );
-        if (dist > MATCH_RADIUS_METERS) continue;
+        const limit =
+          strength === "exact" ? EXACT_MATCH_RADIUS_METERS : FUZZY_MATCH_RADIUS_METERS;
+        if (dist > limit) continue;
       } else if (target.postalCode && place.structuredAddress?.postCode) {
         if (place.structuredAddress.postCode !== target.postalCode) continue;
       }

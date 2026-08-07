@@ -60,6 +60,17 @@ export const EFFORT_LABELS: Record<FixCostBucket, string> = {
 // Status from score: >= passMin is pass, >= warnMin is warn, below is fail.
 export const STATUS_THRESHOLDS = { passMin: 80, warnMin: 40 };
 
+// Impact ÷ effort ranks cheap wins first, which is correct, but on its own
+// it hands the headline list to whatever is cheapest regardless of whether
+// fixing it is worth anything. `hours_special` is the worst offender: it is
+// worth at most 1.4 points of a 100-point score (0.35 × 0.04 × 100), nearly
+// every business scores 0 on it, and it costs minutes — so it outranks
+// checks worth several times as much. A fix has to be worth at least this
+// many points of the overall score to lead the report. Everything below the
+// line still appears in the full findings; it just stops crowding out the
+// advice that moves the number.
+export const MIN_HEADLINE_IMPACT = 2.0;
+
 export interface CheckDef {
   dimension: Dimension;
   weight: number; // within dimension; each dimension's weights sum to 1.0

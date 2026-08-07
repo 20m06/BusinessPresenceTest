@@ -34,15 +34,15 @@ export default function AboutPage() {
             </p>
           </div>
 
-          {/*
-            TODO — replace the two placeholder paragraphs below with the real
-            biography. Everything else on this page is factual and can stay.
-          */}
           <div className="space-y-5 leading-relaxed">
-            <p className="border-l-2 border-warn bg-white px-4 py-3 text-muted">
-              [Placeholder — personal background goes here: school, what
-              Michael is studying, prior work, and how he ended up looking at
-              local businesses. Not written yet, because it should be true.]
+            <p>
+              Michael Kosenko is a Business Administration student at Diablo
+              Valley College and a visiting student at the Haas School of
+              Business at UC Berkeley. He previously worked as an analyst
+              intern at the Dublin Chamber of Commerce, whose members are
+              exactly the businesses this tool was built for: small, local,
+              and competing for attention against companies with real
+              marketing budgets.
             </p>
 
             <p>

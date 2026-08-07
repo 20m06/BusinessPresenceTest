@@ -15,6 +15,18 @@ export interface OfferService {
   body: string[];
 }
 
+/**
+ * The person on the other end of the booking link. Shown on the report CTA
+ * so the button is attached to a face rather than to a company noun.
+ * Deliberately says nothing about credentials — only what happens on the call.
+ */
+export interface OfferFounder {
+  name: string;
+  role: string;
+  photo: string;
+  pitch: string[];
+}
+
 export interface OfferCopy {
   // Shown when the report has fixes to recommend.
   headline: string;
@@ -26,6 +38,7 @@ export interface OfferCopy {
   servicesHeadline: string;
   servicesLead: string;
   serviceCtaLine: string;
+  founder: OfferFounder;
   services: OfferService[];
   buttonLabel: string;
   clubLine: string | null;
@@ -101,6 +114,16 @@ export function getOffers(): OfferCopy {
         "Everything below is free. Start with the visibility score — it tells us where to begin.",
       serviceCtaLine:
         "Not sure if this is what your business needs? Book a free session and we will look at your score together.",
+      founder: {
+        name: "Michael Kosenko",
+        role: "Founder, Arsenal Consulting",
+        photo: "/michael.png",
+        pitch: [
+          "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I built this tool. A student advisor reads every report it produces, including yours.",
+          "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes actually matter for a business like yours, and you leave with a short plan you can do yourself.",
+          "It is free, and it stays free. Bring your questions about anything on the report.",
+        ],
+      },
       services: SERVICES,
       buttonLabel: "Book time with a student advisor",
       clubLine: "A free service of the student club at Diablo Valley College.",
@@ -118,9 +141,19 @@ export function getOffers(): OfferCopy {
     servicesLead:
       "Start with the free visibility score. It tells us — and you — where the real problems are before anyone spends money.",
     serviceCtaLine:
-      "Not sure if this is what your business needs? Book a free 20-minute review and we will look at your score together.",
+      "Not sure if this is what your business needs? Book a free 20-minute coffee chat and we will look at your score together.",
+    founder: {
+      name: "Michael Kosenko",
+      role: "Founder, Arsenal Consulting",
+      photo: "/michael.png",
+      pitch: [
+        "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I interned at the Dublin Chamber of Commerce. I built this tool, and I read every report that comes out of it, including yours.",
+        "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes are worth paying anyone to do and which ones you should just do yourself, and you leave with a plan either way.",
+        "No slides, no pressure. If the answer is that you do not need us, I will say so.",
+      ],
+    },
     services: SERVICES,
-    buttonLabel: "Book a free 20-minute review",
+    buttonLabel: "Book a free 20-minute coffee chat",
     clubLine: null,
     calendlyUrl,
   };

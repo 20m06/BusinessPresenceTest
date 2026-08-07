@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { getOffers } from "@/lib/offers";
 import { Receipt } from "./receipt";
@@ -232,6 +233,30 @@ export default function ReportPage({
                   </li>
                 ))}
               </ul>
+              <div className="mt-6 pt-5 border-t border-rule flex gap-4">
+                <Image
+                  src={offers.founder.photo}
+                  alt={offers.founder.name}
+                  width={864}
+                  height={1184}
+                  sizes="72px"
+                  className="w-[72px] h-[96px] object-cover border border-rule shrink-0"
+                />
+                <div>
+                  <p className="text-sm font-medium">{offers.founder.name}</p>
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted">
+                    {offers.founder.role}
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {offers.founder.pitch.map((line, i) => (
+                      <p key={i} className="text-sm text-muted leading-relaxed">
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <a
                 href={offers.calendlyUrl}
                 className="mt-5 inline-block px-6 py-3 bg-ink text-paper font-medium hover:bg-ink/90"

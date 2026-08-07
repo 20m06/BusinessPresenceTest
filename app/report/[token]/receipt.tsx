@@ -10,6 +10,8 @@ interface ReceiptProps {
   lines: Array<{ label: string; score: number | null }>;
   overall: number | null;
   coveragePct: number | null;
+  /** Layout overrides from the caller — margins only, never the receipt's own look. */
+  className?: string;
 }
 
 function band(score: number | null): string {
@@ -26,9 +28,12 @@ export function Receipt({
   lines,
   overall,
   coveragePct,
+  className = "",
 }: ReceiptProps) {
   return (
-    <div className="mt-8 mx-auto max-w-sm bg-white border border-rule px-5 py-6 font-mono text-sm shadow-[0_1px_0_var(--rule)]">
+    <div
+      className={`mt-8 mx-auto max-w-sm bg-white border border-rule px-5 py-6 font-mono text-sm shadow-[0_1px_0_var(--rule)] ${className}`}
+    >
       <p className="text-center text-xs tracking-[0.2em] uppercase">
         {BRAND_NAME}
       </p>

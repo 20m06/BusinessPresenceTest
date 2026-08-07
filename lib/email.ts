@@ -1,4 +1,5 @@
 import "server-only";
+import { BRAND_NAME } from "@/lib/brand";
 
 // Resend integration (CLAUDE.md §10). Current mode: every completed audit
 // is emailed to the owner of THIS tool (REPORT_NOTIFY_EMAIL) as a lead
@@ -26,7 +27,7 @@ export async function sendAuditNotification(input: AuditEmailInput): Promise<voi
   if (!emailEnabled()) return;
   const to = process.env.REPORT_NOTIFY_EMAIL;
   if (!to) return;
-  const from = process.env.EMAIL_FROM || "Business Visibility Test <onboarding@resend.dev>";
+  const from = process.env.EMAIL_FROM || `${BRAND_NAME} <onboarding@resend.dev>`;
 
   const scoreLabel = input.overall === null ? "—" : `${Math.round(input.overall * 10) / 10}`;
   const subject =
@@ -48,7 +49,7 @@ export async function sendAuditNotification(input: AuditEmailInput): Promise<voi
 
   const html = `
     <div style="font-family:ui-monospace,Menlo,Consolas,monospace;max-width:480px">
-      <p style="letter-spacing:2px;text-transform:uppercase;font-size:11px;color:#5A6068">Business Visibility Test</p>
+      <p style="letter-spacing:2px;text-transform:uppercase;font-size:11px;color:#5A6068">${BRAND_NAME}</p>
       <h2 style="margin:8px 0">${input.businessName}</h2>
       ${input.requesterEmail ? `<p style="color:#5A6068">requested by ${input.requesterEmail}</p>` : ""}
       <p style="font-size:32px;margin:12px 0"><strong>${scoreLabel}</strong>/100${

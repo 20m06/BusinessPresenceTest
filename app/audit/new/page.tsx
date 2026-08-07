@@ -126,7 +126,7 @@ export default function AuditNewPage() {
     <main className="flex-1 flex flex-col">
       <div className="w-full max-w-xl mx-auto px-5 pt-14 sm:pt-20 pb-16">
         <p className="font-mono text-xs tracking-[0.2em] uppercase text-muted">
-          Business Visibility Test
+          Start your audit
         </p>
         <Suspense>
           <AuditNewInner />

@@ -28,7 +28,7 @@ export default function Home() {
     <main className="flex-1 flex flex-col">
       <div className="w-full max-w-xl mx-auto px-5 pt-14 sm:pt-24 pb-16">
         <p className="font-mono text-xs tracking-[0.2em] uppercase text-muted">
-          Business Visibility Test
+          Free visibility score
         </p>
 
         <h1 className="mt-4 text-3xl sm:text-4xl font-semibold tracking-[-0.02em]">
@@ -118,15 +118,6 @@ export default function Home() {
           </p>
         </form>
       </div>
-
-      <footer className="mt-auto border-t border-rule">
-        <div className="max-w-xl mx-auto px-5 py-6">
-          <p className="font-mono text-xs text-muted">
-            We only read public information — your Google listing and your
-            website. Nothing is changed or posted.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 }

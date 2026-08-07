@@ -401,3 +401,92 @@ describe("holiday window", () => {
     expect(isHolidayWithin(new Date("2026-05-20T00:00:00Z"), 60)).toBe(true);
   });
 });
+
+describe("fix instructions cite what was actually measured", () => {
+  const find = (result: ReturnType<typeof evaluateAudit>, key: string) =>
+    result.checks.find((c) => c.checkKey === key);
+
+  it("names the category it found instead of describing the problem abstractly", () => {
+    const result = evaluateAudit(
+      inputs({ place: { ...healthyPlace, primaryType: "restaurant" } })
+    );
+    expect(find(result, "category_specific")?.fixInstruction).toContain(
+      '"restaurant"'
+    );
+  });
+
+  it("counts the days of hours that are missing", () => {
+    const result = evaluateAudit(
+      inputs({ place: { ...healthyPlace, daysWithHours: 4 } })
+    );
+    const text = find(result, "hours_present")?.fixInstruction ?? "";
+    expect(text).toContain("4 of 7 days");
+    expect(text).toContain("missing 3 days");
+  });
+
+  it("quotes the photo and review counts", () => {
+    const result = evaluateAudit(
+      inputs({
+        place: { ...healthyPlace, photoCount: 3, reviewCount: 11, rating: 3.8 },
+      })
+    );
+    expect(find(result, "photos_count")?.fixInstruction).toContain("3 photos");
+    expect(find(result, "review_count")?.fixInstruction).toContain("11 Google reviews");
+    expect(find(result, "average_rating")?.fixInstruction).toContain("3.8 stars");
+  });
+
+  it("dates the newest review rather than saying it is old", () => {
+    const result = evaluateAudit(
+      inputs({
+        place: { ...healthyPlace, newestReviewAt: "2025-03-04T00:00:00Z" },
+      })
+    );
+    const text = find(result, "review_recency")?.fixInstruction ?? "";
+    expect(text).toContain("March 2025");
+    expect(text).toContain("months ago");
+  });
+
+  it("reports owner replies as a share of the visible sample, never the whole", () => {
+    const result = evaluateAudit(
+      inputs({
+        place: { ...healthyPlace, reviewSampleSize: 5, reviewsWithOwnerReply: 1 },
+      })
+    );
+    const text = find(result, "owner_responds")?.fixInstruction ?? "";
+    expect(text).toContain("1 of the 5 most recent reviews");
+  });
+
+  it("distinguishes an unlinked phone number from a missing one", () => {
+    const plain = evaluateAudit(
+      inputs({
+        site: { ...healthySite, telLinkPresent: false, phonePlainTextPresent: true },
+      })
+    );
+    expect(find(plain, "tel_link_clickable")?.fixInstruction).toContain("plain text");
+
+    const absent = evaluateAudit(
+      inputs({
+        site: { ...healthySite, telLinkPresent: false, phonePlainTextPresent: false },
+      })
+    );
+    expect(find(absent, "tel_link_clickable")?.fixInstruction).toContain(
+      "no phone number anywhere"
+    );
+  });
+
+  it("states the measured load time in seconds", () => {
+    const result = evaluateAudit(
+      inputs({ psi: { ...healthyPsi, performance: 35, lcpMs: 6200 } })
+    );
+    expect(find(result, "psi_performance")?.fixInstruction).toContain("6.2 seconds");
+  });
+
+  it("falls back to the generic wording when there is nothing to cite", () => {
+    const result = evaluateAudit(
+      inputs({ psi: { ...healthyPsi, performance: 35, lcpMs: null } })
+    );
+    expect(find(result, "psi_performance")?.fixInstruction).toBe(
+      CHECKS.psi_performance.fixInstruction
+    );
+  });
+});

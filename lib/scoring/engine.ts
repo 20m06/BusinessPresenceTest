@@ -67,6 +67,38 @@ function tier(tiers: Array<[number, number]>, value: number): number {
   return 0;
 }
 
+// ── Evidence phrasing ────────────────────────────────────────────────
+// A fix that quotes the business's own numbers reads as a measurement
+// instead of a template, and it stops three different businesses getting
+// word-for-word identical advice. These only ever restate what the check
+// already measured — never a number we did not observe.
+
+function plural(n: number, one: string, many: string): string {
+  return n === 1 ? one : many;
+}
+
+/** Google's primaryType is snake_case ("meal_takeaway"). */
+function readableType(t: string): string {
+  return t.replace(/_/g, " ");
+}
+
+/** "March 2025, about 11 months ago" */
+function whenPhrase(now: Date, iso: string): string {
+  const then = new Date(iso);
+  const label = then.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const days = Math.floor((now.getTime() - then.getTime()) / 86400_000);
+  if (days < 45) return `${label}, ${days} ${plural(days, "day", "days")} ago`;
+  const months = Math.round(days / 30);
+  if (months < 24)
+    return `${label}, about ${months} ${plural(months, "month", "months")} ago`;
+  const years = Math.floor(months / 12);
+  return `${label}, more than ${years} ${plural(years, "year", "years")} ago`;
+}
+
 interface Raw {
   score: number | null;
   status?: CheckStatus; // defaults to statusFromScore
@@ -220,15 +252,27 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
         score: pt === null ? 0 : GENERIC_TYPES.has(pt) ? CATEGORY_GENERIC_SCORE : 100,
         confidence: "verified",
         rawValue: { primaryType: pt },
+        fixInstruction:
+          pt === null
+            ? 'Your Google profile has no business category set. Pick the most specific one that fits, like "Dominican restaurant" rather than "Restaurant".'
+            : GENERIC_TYPES.has(pt)
+              ? `Your category is set to "${readableType(pt)}", which is too broad to win specific searches. Change it to the most specific match, like "Dominican restaurant" rather than "Restaurant".`
+              : undefined,
       })
     );
 
+    const daysWithHours = place.daysWithHours;
     checks.push(
       make("hours_present", {
-        score:
-          place.daysWithHours === 7 ? 100 : place.daysWithHours > 0 ? HOURS_PARTIAL_SCORE : 0,
+        score: daysWithHours === 7 ? 100 : daysWithHours > 0 ? HOURS_PARTIAL_SCORE : 0,
         confidence: "verified",
-        rawValue: { daysWithHours: place.daysWithHours },
+        rawValue: { daysWithHours },
+        fixInstruction:
+          daysWithHours === 0
+            ? "Your Google profile shows no opening hours at all, so customers cannot tell when you are open. Add hours for all seven days, including the days you are closed."
+            : daysWithHours < 7
+              ? `Your profile has hours for ${daysWithHours} of 7 days. Fill in the missing ${7 - daysWithHours} ${plural(7 - daysWithHours, "day", "days")}, including days you are closed.`
+              : undefined,
       })
     );
 
@@ -238,6 +282,10 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
         score: !holidayNear || place.hasSpecialHoursSoon ? 100 : HOURS_SPECIAL_WARN_SCORE,
         confidence: "inferred", // Google only exposes ~a week of special hours
         rawValue: { holidayNear, hasSpecialHoursSoon: place.hasSpecialHoursSoon },
+        fixInstruction:
+          holidayNear && !place.hasSpecialHoursSoon
+            ? "A US holiday falls within the next 60 days and your profile has no special hours set for it. Add them so customers do not show up to a closed door."
+            : undefined,
       })
     );
 
@@ -249,12 +297,19 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
       })
     );
 
+    const photoCount = place.photoCount;
     checks.push(
       make("photos_count", {
-        score: place.photoCount === null ? null : tier(PHOTO_TIERS, place.photoCount),
-        status: place.photoCount === null ? "unavailable" : undefined,
+        score: photoCount === null ? null : tier(PHOTO_TIERS, photoCount),
+        status: photoCount === null ? "unavailable" : undefined,
         confidence: "verified",
-        rawValue: { photoCount: place.photoCount },
+        rawValue: { photoCount },
+        fixInstruction:
+          photoCount === null
+            ? undefined
+            : photoCount === 0
+              ? "Your Google profile has no photos. Add pictures of your storefront, your interior, and what you sell — aim for 20."
+              : `Your profile has ${photoCount} ${plural(photoCount, "photo", "photos")}. Aim for 20 — storefront, interior, and what you sell.`,
       })
     );
   }
@@ -303,6 +358,11 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
           telLink: site.telLinkPresent,
           plainText: site.phonePlainTextPresent,
         },
+        fixInstruction: site.telLinkPresent
+          ? undefined
+          : site.phonePlainTextPresent
+            ? "Your phone number is printed on your site as plain text, so tapping it on a phone does nothing. Make it a link that starts the call."
+            : "There is no phone number anywhere on your website. Add one, as a link that starts a call when tapped on a phone.",
       })
     );
     checks.push(
@@ -332,14 +392,21 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
 
   // ── Social Proof ───────────────────────────────────────────────────
   const socialUnavailable = !gbpFound;
+  const reviewCount = place.reviewCount;
   checks.push(
     make("review_count", {
-      score: socialUnavailable || place.reviewCount === null
+      score: socialUnavailable || reviewCount === null
         ? null
-        : tier(REVIEW_COUNT_TIERS, place.reviewCount),
-      status: socialUnavailable || place.reviewCount === null ? "unavailable" : undefined,
+        : tier(REVIEW_COUNT_TIERS, reviewCount),
+      status: socialUnavailable || reviewCount === null ? "unavailable" : undefined,
       confidence: "verified",
-      rawValue: { reviewCount: place.reviewCount },
+      rawValue: { reviewCount },
+      fixInstruction:
+        socialUnavailable || reviewCount === null
+          ? undefined
+          : reviewCount === 0
+            ? "You have no Google reviews yet. Ask your regulars — a card or QR code by the register works."
+            : `You have ${reviewCount} Google ${plural(reviewCount, "review", "reviews")}. Ask your regulars for more — a card or QR code by the register works.`,
     })
   );
   checks.push(
@@ -349,6 +416,12 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
       status: socialUnavailable || place.rating === null ? "unavailable" : undefined,
       confidence: "verified",
       rawValue: { rating: place.rating },
+      fixInstruction:
+        socialUnavailable || place.rating === null
+          ? undefined
+          : `Your rating is ${place.rating.toFixed(1)} stars${
+              reviewCount ? ` across ${reviewCount} reviews` : ""
+            }. Reply to unhappy reviews politely and fix the repeated complaints — the rating follows.`,
     })
   );
 
@@ -376,6 +449,14 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
           : undefined,
       confidence: "verified",
       rawValue: { newestReviewAt: place.newestReviewAt },
+      fixInstruction:
+        socialUnavailable
+          ? undefined
+          : (place.reviewCount ?? 0) === 0
+            ? "You have no reviews at all, so there is nothing recent for Google to weigh. Ask a customer this week."
+            : place.newestReviewAt
+              ? `Your newest review is from ${whenPhrase(now, place.newestReviewAt)}. Ask a customer this week — Google trusts businesses with fresh reviews.`
+              : undefined,
     })
   );
 
@@ -392,6 +473,10 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
         sampleSize: place.reviewSampleSize,
         withOwnerReply: place.reviewsWithOwnerReply,
       },
+      // "based on N recent reviews" — never a full-population claim (§6.8).
+      fixInstruction: replyDataAvailable
+        ? `You have replied to ${place.reviewsWithOwnerReply} of the ${place.reviewSampleSize} most recent reviews we can see. A short thank-you counts — customers read the replies.`
+        : undefined,
     })
   );
 
@@ -458,6 +543,10 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
         status: psi.available && psi.performance !== null ? undefined : "unavailable",
         confidence: "verified",
         rawValue: { ...psiRaw, performance: psi.performance },
+        fixInstruction:
+          psi.available && psi.lcpMs !== null
+            ? `Your site takes about ${(psi.lcpMs / 1000).toFixed(1)} seconds to show its main content on a phone. Shrinking large photos is the usual quick win.`
+            : undefined,
       })
     );
     checks.push(

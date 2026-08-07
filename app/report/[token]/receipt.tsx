@@ -1,6 +1,8 @@
 // The receipt — the signature score display (CLAUDE.md §14).
 // A narrow monospace column: line items with leader dots, a rule, a total.
 
+import { BRAND_NAME } from "@/lib/brand";
+
 interface ReceiptProps {
   businessName: string;
   cityState: string;
@@ -28,7 +30,7 @@ export function Receipt({
   return (
     <div className="mt-8 mx-auto max-w-sm bg-white border border-rule px-5 py-6 font-mono text-sm shadow-[0_1px_0_var(--rule)]">
       <p className="text-center text-xs tracking-[0.2em] uppercase">
-        Business Visibility Test
+        {BRAND_NAME}
       </p>
       <p className="mt-1 text-center text-xs text-muted">{businessName}</p>
       <p className="text-center text-xs text-muted">

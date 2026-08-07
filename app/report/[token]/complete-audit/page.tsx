@@ -101,7 +101,7 @@ export default function CompleteAuditPage({
     <main className="flex-1 flex flex-col">
       <div className="w-full max-w-xl mx-auto px-5 pt-14 sm:pt-20 pb-16">
         <p className="font-mono text-xs tracking-[0.2em] uppercase text-muted">
-          Business Visibility Test
+          Visibility report
         </p>
 
         <h1 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-[-0.02em]">

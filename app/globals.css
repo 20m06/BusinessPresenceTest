@@ -14,6 +14,13 @@
      colour sits close to (see --warn). */
   --accent: #c2410c;
   --accent-tint: #fdf1ea;
+
+  /* Paid-fix band on report page two. Blue is deliberately outside the
+     status palette — a band that offered to sell you something in the
+     same colour as a failing check would read as the score being for
+     sale. Nothing else on the site uses it. */
+  --offer: #1668c7;
+  --offer-deep: #0b3f7e;
 }
 
 @theme inline {
@@ -26,6 +33,8 @@
   --color-fail: var(--fail);
   --color-accent: var(--accent);
   --color-accent-tint: var(--accent-tint);
+  --color-offer: var(--offer);
+  --color-offer-deep: var(--offer-deep);
   --font-sans: var(--font-archivo), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }

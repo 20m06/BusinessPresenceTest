@@ -159,6 +159,69 @@ export function getOffers(): OfferCopy {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Paid-fix band on report page two (owner decision, 2026-08-11). This is a
+// deliberate reversal of the original "no prices anywhere" rule in §13:
+// prices now appear per failing check, while the report CTA block stays
+// price-free and still routes to a conversation.
+//
+// Price comes from the check's own fixCostBucket rather than a per-check
+// table, so a new check in config.ts is priced the moment it is added and
+// the price can never disagree with the effort estimate shown next to it.
+// ---------------------------------------------------------------------------
+
+export type FixPriceBucket = "minutes" | "hours" | "days" | "money";
+
+const FIX_PRICE_USD: Record<FixPriceBucket, number> = {
+  minutes: 50,
+  hours: 75,
+  days: 200,
+  // A fix whose blocker is money rather than time — a site rebuild — is the
+  // top tier, not a cheap one, even though it takes us no longer than 'days'.
+  money: 200,
+};
+
+/** Bucket missing or unrecognised: charge the middle tier, never the top. */
+const FIX_PRICE_FALLBACK_USD = 75;
+
+export interface FixOffer {
+  /** Band copy. */
+  label: string;
+  /** "$50" in commercial mode, "Free" in pro_bono. */
+  price: string;
+  href: string;
+  /** Spoken by screen readers in place of the band's visual shorthand. */
+  ariaLabel: string;
+}
+
+export function getFixOffer(
+  bucket: string | null | undefined,
+  checkLabel: string
+): FixOffer {
+  const mode = process.env.NEXT_PUBLIC_OFFER_MODE ?? "commercial";
+  const amount =
+    bucket && bucket in FIX_PRICE_USD
+      ? FIX_PRICE_USD[bucket as FixPriceBucket]
+      : FIX_PRICE_FALLBACK_USD;
+
+  if (mode === "pro_bono") {
+    return {
+      label: "Fix it now in 5 minutes!",
+      price: "Free",
+      href: process.env.NEXT_PUBLIC_CALENDLY_URL ??
+        "https://calendly.com/michaelkosenko456/30min",
+      ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free`,
+    };
+  }
+
+  return {
+    label: "Fix it now in 5 minutes!",
+    price: `$${amount}`,
+    href: "https://dashboard.stripe.com/login",
+    ariaLabel: `Pay $${amount} to have us fix "${checkLabel}" for you`,
+  };
+}
+
 export function getService(slug: string): OfferService | undefined {
   return SERVICES.find((s) => s.slug === slug);
 }

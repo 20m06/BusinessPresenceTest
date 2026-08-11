@@ -26,7 +26,7 @@ export async function GET(
     db
       .from("audit_checks")
       .select(
-        "dimension, check_key, label, status, confidence, normalized_score, raw_value, weight_in_dim"
+        "dimension, check_key, label, status, confidence, normalized_score, raw_value, weight_in_dim, fix_cost_bucket"
       )
       .eq("audit_id", audit.id)
       .order("weight_in_dim", { ascending: false }),

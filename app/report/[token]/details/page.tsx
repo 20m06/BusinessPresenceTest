@@ -55,6 +55,10 @@ const UNAVAILABLE_REASONS: Record<string, string> = {
   site_unreadable: "we couldn't read the site",
   apple_not_configured: "Apple Maps checking isn't switched on",
   apple_lookup_failed: "we couldn't reach Apple Maps",
+  llm_not_configured: "AI assistant checking isn't switched on",
+  llm_probe_failed: "we couldn't reach the AI assistant",
+  llm_no_readable_answer: "the AI assistant's answer couldn't be read",
+  llm_insufficient_location: "we don't have enough location detail to ask",
 };
 
 function describeRaw(row: CheckRow): string | null {
@@ -87,6 +91,19 @@ function describeRaw(row: CheckRow): string | null {
       return r.found
         ? `found on Apple Maps as "${r.matchedName}"`
         : "no matching listing on Apple Maps — iPhone users can't find you there";
+    case "llm_recommends":
+      if (r.reason) return UNAVAILABLE_REASONS[String(r.reason)] ?? null;
+      return r.recommended
+        ? r.citedOwnSite && !r.named
+          ? "your website was one of the sources it read"
+          : "named you when asked to recommend places like yours"
+        : "didn't name you when asked to recommend places like yours";
+    case "llm_knows_you":
+      if (r.reason) return UNAVAILABLE_REASONS[String(r.reason)] ?? null;
+      if (!r.known) return "couldn't find your business when asked by name";
+      return r.phoneMatches === false
+        ? `gave the phone number ${r.statedPhone} — not the one on your Google profile`
+        : "found your business and gave the right phone number";
     case "gbp_claimed":
       return r.signalCount != null ? `${r.signalCount}/5 signals of an active owner` : null;
     case "phone_present":

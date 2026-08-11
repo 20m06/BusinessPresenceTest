@@ -1,11 +1,12 @@
 import "server-only";
-import { bumpUsage } from "./caps";
+import { bumpUsage, llmProbeAllowed } from "./caps";
 import { fetchSite } from "./clients/site";
 import { runPagespeed } from "./clients/psi";
 import { getServiceClient } from "./supabase";
 import { evaluateAudit } from "./scoring/engine";
 import {
   normalizeApple,
+  normalizeLlm,
   normalizePlace,
   normalizePsi,
   normalizeSite,
@@ -14,6 +15,11 @@ import {
   type RawSiteFetch,
 } from "./scoring/normalize";
 import { lookupOnAppleMaps } from "./clients/apple-maps";
+import {
+  llmVisibilityConfigured,
+  probeLlmVisibilityForSite,
+  type LlmProbe,
+} from "./clients/anthropic";
 import { analyzeSiteHtml, type SiteSignals } from "./site-analysis";
 import { sendAuditNotification } from "./email";
 import { getTopFixes } from "./top-fixes";
@@ -59,6 +65,24 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
         })
       : Promise.resolve(null);
 
+    // Claude visibility probe — also a check on the business, not the
+    // site, so it runs whether or not there's a website. Skipped when
+    // unconfigured or over its own daily cap; either way the two checks
+    // read 'unavailable' rather than 0.
+    const llmPromise =
+      bizRow && llmVisibilityConfigured() && (await llmProbeAllowed())
+        ? probeLlmVisibilityForSite(
+            {
+              name: bizRow.name,
+              city: bizRow.city,
+              state: bizRow.state,
+              primaryType: rawPlace?.primaryType ?? null,
+              phone: rawPlace?.nationalPhoneNumber ?? null,
+            },
+            websiteUri
+          )
+        : Promise.resolve(null as LlmProbe | null);
+
     let siteFetch: RawSiteFetch | null = null;
     let signals: SiteSignals | null = null;
     let rawPsi: RawPsi | null = null;
@@ -72,13 +96,22 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
       }
       rawPsi = (await psiPromise) as RawPsi | null;
     }
-    const appleLookup = await applePromise;
+    const [appleLookup, llmProbe] = await Promise.all([applePromise, llmPromise]);
 
     const place = normalizePlace(rawPlace);
     const site = normalizeSite(websiteUri, siteFetch, signals);
     const psi = normalizePsi(rawPsi);
     const apple = normalizeApple(appleLookup);
-    const scores = evaluateAudit({ place, site, psi, apple, manual: {}, now: new Date() });
+    const llm = normalizeLlm(llmProbe);
+    const scores = evaluateAudit({
+      place,
+      site,
+      psi,
+      apple,
+      llm,
+      manual: {},
+      now: new Date(),
+    });
 
     const checkRows = scores.checks.map((c) => ({
       audit_id: audit.id,
@@ -119,6 +152,12 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
         website_url_checked: siteFetch?.finalUrl ?? websiteUri,
         apple_listing_found: apple.checked ? apple.found : null,
         apple_matched_name: apple.matchedName,
+        llm_recommended: llm.checked ? llm.recommended : null,
+        llm_knows_business: llm.checked ? llm.known : null,
+        llm_phone_matches: llm.checked ? llm.phoneMatches : null,
+        llm_model: llm.model,
+        // An LLM answer can't be re-derived later — store the whole probe.
+        raw_llm: llmProbe,
         review_count: place.reviewCount,
         average_rating: place.rating,
         photo_count: place.photoCount,
@@ -136,7 +175,13 @@ export async function processAuditById(auditId: string): Promise<"complete" | "r
       .eq("id", audit.id);
     if (updateErr) throw new Error(`audit update failed: ${updateErr.message}`);
 
-    if (psiCalls > 0) await bumpUsage({ psi: psiCalls });
+    if (psiCalls > 0 || llmProbe?.asked) {
+      await bumpUsage({
+        psi: psiCalls,
+        llmProbes: llmProbe?.asked ? 1 : 0,
+        llmSearches: llmProbe?.searchesUsed ?? 0,
+      });
+    }
 
     // Email notification — never fails the audit.
     await notifyForAudit(audit, scores.overall, site.hasWebsite, {

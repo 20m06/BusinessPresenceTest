@@ -1,7 +1,7 @@
 // Map raw API responses to the engine's normalized inputs.
 // Pure functions — testable against fixture JSON.
 
-import type { AppleInput, PlaceInput, PsiInput, SiteInput } from "./inputs";
+import type { AppleInput, LlmInput, PlaceInput, PsiInput, SiteInput } from "./inputs";
 import type { SiteSignals } from "../site-analysis";
 
 // Shape of the subset of Places (New) Place Details we request.
@@ -170,6 +170,52 @@ export function normalizeApple(raw: RawAppleLookup | null): AppleInput {
     found: raw.found,
     matchedName: raw.matchedName,
     distanceMeters: raw.distanceMeters,
+    reason: null,
+  };
+}
+
+export interface RawLlmProbe {
+  configured: boolean;
+  asked: boolean;
+  model: string | null;
+  askedAt: string | null;
+  discovery: { named: boolean; citedOwnSite: boolean } | null;
+  knowledge: {
+    found: boolean;
+    statedPhone: string | null;
+    phoneMatches: boolean | null;
+  } | null;
+  error: string | null;
+}
+
+export function normalizeLlm(raw: RawLlmProbe | null): LlmInput {
+  const blank = (reason: string): LlmInput => ({
+    checked: false,
+    askedAt: null,
+    model: null,
+    recommended: null,
+    named: null,
+    citedOwnSite: false,
+    known: null,
+    statedPhone: null,
+    phoneMatches: null,
+    reason,
+  });
+
+  if (!raw || !raw.configured) return blank("llm_not_configured");
+  if (!raw.asked || raw.error) return blank(raw.error ?? "llm_probe_failed");
+
+  return {
+    // A probe that came back with neither half readable is not a "no".
+    checked: !!(raw.discovery || raw.knowledge),
+    askedAt: raw.askedAt,
+    model: raw.model,
+    recommended: raw.discovery ? raw.discovery.named || raw.discovery.citedOwnSite : null,
+    named: raw.discovery ? raw.discovery.named : null,
+    citedOwnSite: !!raw.discovery?.citedOwnSite,
+    known: raw.knowledge ? raw.knowledge.found : null,
+    statedPhone: raw.knowledge?.statedPhone ?? null,
+    phoneMatches: raw.knowledge?.phoneMatches ?? null,
     reason: null,
   };
 }

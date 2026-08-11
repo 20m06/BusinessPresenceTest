@@ -1,11 +1,20 @@
 // Scoring configuration — CLAUDE.md §6. Every weight and threshold lives
 // HERE and nowhere else. Never change values without bumping the version.
 
-// 2.0.0: Apple Maps presence joins Discoverability. Being listed on Apple
-// Maps now carries the same weight as being listed on Google (0.20 each),
-// and the other Google checks were scaled to keep the dimension at 1.0.
-// Scores from 1.x are NOT comparable to 2.x.
-export const SCORING_CONFIG_VERSION = "2.0.0";
+// 3.0.0: being found by an AI assistant joins Discoverability. Customers
+// increasingly ask Claude or ChatGPT "where should I eat near here"
+// instead of opening Maps, so "can you be found" now covers three
+// surfaces, not two. The pair carries 0.16 of the dimension and the
+// eight existing checks were scaled by 0.84 to keep it at 1.0.
+//
+// Weighted below the map listings on purpose: an assistant's answer is
+// sampled once per audit and moves on its own between runs, while a
+// Google or Apple listing either exists or doesn't. Scores from 2.x are
+// NOT comparable to 3.x.
+//
+// 2.0.0: Apple Maps presence joined Discoverability, equal in weight to
+// Google (0.20 each). 1.x is not comparable to 2.x.
+export const SCORING_CONFIG_VERSION = "3.0.0";
 
 // When a business has no website at all, the six Technical Health checks
 // are not six separate problems — they are one. This finding replaces them
@@ -71,6 +80,18 @@ export const STATUS_THRESHOLDS = { passMin: 80, warnMin: 40 };
 // advice that moves the number.
 export const MIN_HEADLINE_IMPACT = 2.0;
 
+// Checks that score, and appear on the report with their own callout, but
+// never take one of the three headline slots. The headline list is a
+// to-do for this week; a fix with no cheap version does not belong in it,
+// however badly the business scores. Failing llm_recommends is worth 3.5
+// points of the overall score and would otherwise outrank real work.
+export const HEADLINE_EXCLUDED_CHECKS = new Set(["llm_recommends", "llm_knows_you"]);
+
+// llm_knows_you: found and telling people the right number is the whole
+// point. Found but quoting a phone number that isn't yours is its own
+// problem, so it lands between the two rather than passing.
+export const LLM_KNOWS_SCORES = { correct: 100, wrongPhone: 50, notFound: 0 };
+
 export interface CheckDef {
   dimension: Dimension;
   weight: number; // within dimension; each dimension's weights sum to 1.0
@@ -82,12 +103,14 @@ export interface CheckDef {
 
 export const CHECKS: Record<string, CheckDef> = {
   // ── Discoverability (35%) ──────────────────────────────────────────
-  // Weights: the two "does your listing exist" checks are deliberately
-  // equal (Google 0.20, Apple 0.20); the remaining Google detail checks
-  // share the other 0.60.
+  // Three surfaces a customer can find you through. The two map listings
+  // are deliberately equal (Google 0.17, Apple 0.17). AI assistants take
+  // 0.16 between them, below the maps because the signal is one sampled
+  // answer rather than a listing that either exists or doesn't. The
+  // remaining Google detail checks share 0.50.
   gbp_exists: {
     dimension: "discoverability",
-    weight: 0.2,
+    weight: 0.17,
     label: "Google profile found",
     fixCostBucket: "hours",
     fixTitle: "Create your Google Business Profile",
@@ -96,16 +119,38 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   apple_listing_found: {
     dimension: "discoverability",
-    weight: 0.2,
+    weight: 0.17,
     label: "Apple Maps listing found",
     fixCostBucket: "hours",
     fixTitle: "Add your business to Apple Maps",
     fixInstruction:
       "Go to businessconnect.apple.com and claim your free listing. Every iPhone uses Apple Maps by default, and most small businesses have never claimed theirs.",
   },
+  // The two AI-assistant checks. Both are 'inferred' and both are kept
+  // out of the headline fixes (HEADLINE_EXCLUDED_CHECKS): there is no
+  // five-minute version of "get recommended by Claude", and the report
+  // must not lead an owner with advice they cannot act on this week.
+  llm_recommends: {
+    dimension: "discoverability",
+    weight: 0.1,
+    label: "AI assistants recommend you",
+    fixCostBucket: "days",
+    fixTitle: "Build the trail an AI assistant follows",
+    fixInstruction:
+      "AI assistants read the same public pages people do — your Google profile, your website, and directory listings. Filling those in completely, with your services and hours written as plain text, is what gets you into the answer.",
+  },
+  llm_knows_you: {
+    dimension: "discoverability",
+    weight: 0.06,
+    label: "AI assistants know your details",
+    fixCostBucket: "hours",
+    fixTitle: "Make your details easy to find",
+    fixInstruction:
+      "Put your business name, address, phone number, and hours as plain text on your own website, worded exactly the same way as on your Google profile.",
+  },
   gbp_claimed: {
     dimension: "discoverability",
-    weight: 0.12,
+    weight: 0.1,
     label: "Profile appears claimed",
     fixCostBucket: "hours",
     fixTitle: "Claim your Google Business Profile",
@@ -114,7 +159,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   category_specific: {
     dimension: "discoverability",
-    weight: 0.12,
+    weight: 0.1,
     label: "Category is specific",
     fixCostBucket: "minutes",
     fixTitle: "Pick a more specific category",
@@ -123,7 +168,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   hours_present: {
     dimension: "discoverability",
-    weight: 0.16,
+    weight: 0.13,
     label: "Hours listed",
     fixCostBucket: "minutes",
     fixTitle: "Add your opening hours",
@@ -132,7 +177,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   hours_special: {
     dimension: "discoverability",
-    weight: 0.04,
+    weight: 0.03,
     label: "Holiday hours set",
     fixCostBucket: "minutes",
     fixTitle: "Set holiday hours",
@@ -141,7 +186,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   phone_present: {
     dimension: "discoverability",
-    weight: 0.064,
+    weight: 0.05,
     label: "Phone number listed",
     fixCostBucket: "minutes",
     fixTitle: "Add your phone number",
@@ -149,7 +194,7 @@ export const CHECKS: Record<string, CheckDef> = {
   },
   photos_count: {
     dimension: "discoverability",
-    weight: 0.096,
+    weight: 0.09,
     label: "Photos on profile",
     fixCostBucket: "hours",
     fixTitle: "Add photos to your profile",

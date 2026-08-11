@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { evaluateAudit, isHolidayWithin } from "../lib/scoring/engine";
-import type { AuditInputs, PlaceInput, PsiInput, SiteInput } from "../lib/scoring/inputs";
+import type {
+  AuditInputs,
+  LlmInput,
+  PlaceInput,
+  PsiInput,
+  SiteInput,
+} from "../lib/scoring/inputs";
 import { analyzeSiteHtml } from "../lib/site-analysis";
-import { normalizePlace, normalizePsi } from "../lib/scoring/normalize";
+import { normalizeLlm, normalizePlace, normalizePsi } from "../lib/scoring/normalize";
+import { selectTopFixes } from "../lib/scoring/select-fixes";
+import { parseResultLine } from "../lib/llm-answer";
 import { CHECKS, DIMENSION_WEIGHTS } from "../lib/scoring/config";
 
 const NOW = new Date("2026-08-15T12:00:00Z");
@@ -92,6 +100,148 @@ describe("Apple Maps presence", () => {
     const result = evaluateAudit(inputs({ apple: notOnApple }));
     const fix = result.topFixes.find((f) => f.checkKey === "apple_listing_found");
     expect(fix?.fixInstruction).toContain("businessconnect.apple.com");
+  });
+});
+
+describe("AI assistant visibility (scoring config 3.0.0)", () => {
+  const probed = (over: Partial<LlmInput> = {}): LlmInput => ({
+    checked: true,
+    askedAt: "2026-08-15T12:00:00Z",
+    model: "claude-sonnet-5",
+    recommended: true,
+    named: true,
+    citedOwnSite: false,
+    known: true,
+    statedPhone: "(585) 555-0100",
+    phoneMatches: true,
+    reason: null,
+    ...over,
+  });
+
+  const find = (r: ReturnType<typeof evaluateAudit>, key: string) =>
+    r.checks.find((c) => c.checkKey === key)!;
+
+  it("is unavailable (never 0) when no API key is configured", () => {
+    const result = evaluateAudit(inputs());
+    for (const key of ["llm_recommends", "llm_knows_you"]) {
+      expect(find(result, key).status).toBe("unavailable");
+      expect(find(result, key).normalizedScore).toBeNull();
+    }
+  });
+
+  it("does not drag discoverability down when the probe is skipped", () => {
+    const skipped = evaluateAudit(inputs());
+    const passed = evaluateAudit(inputs({ llm: probed() }));
+    expect(skipped.dimensions.discoverability).toBeCloseTo(
+      passed.dimensions.discoverability as number,
+      6
+    );
+  });
+
+  it("scores both checks 100 when Claude recommends and knows the business", () => {
+    const result = evaluateAudit(inputs({ llm: probed() }));
+    expect(find(result, "llm_recommends").normalizedScore).toBe(100);
+    expect(find(result, "llm_knows_you").normalizedScore).toBe(100);
+  });
+
+  it("keeps 'named in the prose' and 'site was cited' apart in raw_value", () => {
+    const result = evaluateAudit(
+      inputs({ llm: probed({ recommended: true, named: false, citedOwnSite: true }) })
+    );
+    expect(find(result, "llm_recommends").normalizedScore).toBe(100);
+    expect(find(result, "llm_recommends").rawValue).toMatchObject({
+      named: false,
+      citedOwnSite: true,
+    });
+  });
+
+  it("scores 0 when Claude cannot find the business at all", () => {
+    const result = evaluateAudit(inputs({ llm: probed({ known: false, recommended: false }) }));
+    expect(find(result, "llm_knows_you").normalizedScore).toBe(0);
+    expect(find(result, "llm_knows_you").fixInstruction).toContain("could not find you");
+  });
+
+  it("scores 50 and names the wrong number when the phone doesn't match", () => {
+    const result = evaluateAudit(
+      inputs({ llm: probed({ phoneMatches: false, statedPhone: "(585) 555-9999" }) })
+    );
+    const check = find(result, "llm_knows_you");
+    expect(check.normalizedScore).toBe(50);
+    expect(check.fixInstruction).toContain("(585) 555-9999");
+  });
+
+  it("labels both checks inferred and records a sample size of 1", () => {
+    const result = evaluateAudit(inputs({ llm: probed() }));
+    for (const key of ["llm_recommends", "llm_knows_you"]) {
+      expect(find(result, key).confidence).toBe("inferred");
+      expect(find(result, key).rawValue).toMatchObject({ sampleSize: 1 });
+    }
+  });
+
+  it("never takes a headline slot, even when it is the only failing check", () => {
+    const result = evaluateAudit(
+      inputs({ llm: probed({ recommended: false, known: false }) })
+    );
+    const candidates = result.topFixes.map((c) => ({
+      checkKey: c.checkKey,
+      dimension: c.dimension,
+      impactPoints: c.impactPoints as number,
+    }));
+    // It clears MIN_HEADLINE_IMPACT on its own (0.35 × 0.10 × 100 = 3.5),
+    // so only the explicit exclusion keeps it out.
+    expect(candidates.some((c) => c.checkKey === "llm_recommends")).toBe(true);
+    const picked = selectTopFixes(candidates, 3, true);
+    expect(picked.map((p) => p.checkKey)).not.toContain("llm_recommends");
+    expect(picked.map((p) => p.checkKey)).not.toContain("llm_knows_you");
+  });
+});
+
+describe("normalizeLlm", () => {
+  it("treats an unconfigured or failed probe as unchecked, not as a 'no'", () => {
+    expect(normalizeLlm(null).checked).toBe(false);
+    expect(
+      normalizeLlm({
+        configured: true,
+        asked: false,
+        model: null,
+        askedAt: null,
+        discovery: null,
+        knowledge: null,
+        error: "timeout",
+      }).checked
+    ).toBe(false);
+  });
+
+  it("folds an own-site citation into the recommended verdict", () => {
+    const llm = normalizeLlm({
+      configured: true,
+      asked: true,
+      model: "claude-sonnet-5",
+      askedAt: "2026-08-15T12:00:00Z",
+      discovery: { named: false, citedOwnSite: true },
+      knowledge: { found: true, statedPhone: null, phoneMatches: null },
+      error: null,
+    });
+    expect(llm.checked).toBe(true);
+    expect(llm.recommended).toBe(true);
+  });
+});
+
+describe("parseResultLine", () => {
+  it("reads the tagged line Claude is asked to end with", () => {
+    expect(parseResultLine("blah\nRESULT: found=yes; phone=(585) 555-0100")).toEqual({
+      found: true,
+      phone: "(585) 555-0100",
+    });
+  });
+
+  it("treats 'none' and its variants as no phone number", () => {
+    expect(parseResultLine("RESULT: found=yes; phone=none")?.phone).toBeNull();
+    expect(parseResultLine("RESULT: found=no; phone=N/A")?.phone).toBeNull();
+  });
+
+  it("returns null when the line is missing, so the check reads unavailable", () => {
+    expect(parseResultLine("I could not determine that.")).toBeNull();
   });
 });
 

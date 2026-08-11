@@ -12,7 +12,7 @@ export async function GET(
   const { data: audit } = await db
     .from("audits")
     .select(
-      "id, status, failure_reason, overall_score, discoverability_score, conversion_score, social_proof_score, technical_health_score, resilience_score, automated_coverage_pct, has_website, created_at, business_id"
+      "id, status, failure_reason, overall_score, discoverability_score, conversion_score, social_proof_score, technical_health_score, resilience_score, automated_coverage_pct, has_website, created_at, business_id, llm_recommended, llm_knows_business, llm_phone_matches"
     )
     .eq("public_token", token)
     .maybeSingle();
@@ -47,6 +47,16 @@ export async function GET(
             resilience: audit.resilience_score,
             coveragePct: audit.automated_coverage_pct,
             hasWebsite: audit.has_website,
+          }
+        : null,
+    // Kept out of topFixes on purpose (HEADLINE_EXCLUDED_CHECKS) — the
+    // report gives it its own callout instead. null means we didn't ask.
+    llm:
+      audit.status === "complete" && audit.llm_knows_business !== null
+        ? {
+            recommended: audit.llm_recommended,
+            knowsBusiness: audit.llm_knows_business,
+            phoneMatches: audit.llm_phone_matches,
           }
         : null,
     topFixes,

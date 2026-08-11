@@ -5,7 +5,7 @@
 // its own it hands the headline to whatever is cheapest regardless of
 // whether fixing it is worth anything. See MIN_HEADLINE_IMPACT.
 
-import { MIN_HEADLINE_IMPACT } from "./config";
+import { HEADLINE_EXCLUDED_CHECKS, MIN_HEADLINE_IMPACT } from "./config";
 
 export interface RankedFix {
   checkKey: string;
@@ -19,10 +19,15 @@ export interface RankedFix {
  * @param hasWebsite `false` promotes the create-a-website finding to first.
  */
 export function selectTopFixes<T extends RankedFix>(
-  ranked: readonly T[],
+  all: readonly T[],
   limit: number,
   hasWebsite: boolean | null
 ): T[] {
+  // Checks with no cheap version get their own callout on the report but
+  // never a headline slot — including in the last-resort pass below, where
+  // letting one through would hand a business in good shape a single
+  // to-do it cannot act on. See HEADLINE_EXCLUDED_CHECKS.
+  const ranked = all.filter((c) => !HEADLINE_EXCLUDED_CHECKS.has(c.checkKey));
   const picked: T[] = [];
   const takenKeys = new Set<string>();
   const takenDims = new Set<string>();

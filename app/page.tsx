@@ -22,7 +22,7 @@ export default async function Home() {
 
         <p className="mt-3 font-mono text-sm font-semibold text-accent">
           {auditCount.toLocaleString("en-US")}{" "}
-          {auditCount === 1 ? "audit" : "audits"} run so far
+          {auditCount === 1 ? "audit" : "audits"} run so far!
         </p>
 
         <p className="mt-3 text-muted leading-relaxed">

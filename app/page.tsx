@@ -1,28 +1,13 @@
-"use client";
+import HomeSearchForm from "@/components/home-search-form";
+import { getCompletedAuditCount } from "@/lib/stats";
 
-import { useRouter } from "next/navigation";
+// Re-render at most every 5 minutes. The count moves slowly, so serving a
+// cached page keeps this off the database on every visit — and stops the
+// number from being frozen at build time the way a fully static page would.
+export const revalidate = 300;
 
-const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC",
-];
-
-export default function Home() {
-  const router = useRouter();
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const name = String(form.get("businessName") ?? "").trim();
-    const city = String(form.get("city") ?? "").trim();
-    const state = String(form.get("state") ?? "").trim();
-    if (!name || !city || !state) return;
-    const params = new URLSearchParams({ name, city, state });
-    router.push(`/searching?${params.toString()}`);
-  }
+export default async function Home() {
+  const auditCount = await getCompletedAuditCount();
 
   return (
     <main className="flex-1 flex flex-col">
@@ -40,83 +25,14 @@ export default function Home() {
           the three fixes that matter most. Free.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8">
-          <div className="border border-rule bg-white">
-            <div className="p-4 border-b border-rule">
-              <label
-                htmlFor="business-name"
-                className="block font-mono text-xs uppercase tracking-wider text-muted"
-              >
-                Business name
-              </label>
-              <input
-                id="business-name"
-                name="businessName"
-                type="text"
-                required
-                autoComplete="organization"
-                placeholder="Sunrise Bakery"
-                className="mt-1 w-full bg-transparent text-lg placeholder:text-muted/50 focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-[1fr_auto]">
-              <div className="p-4 border-r border-rule">
-                <label
-                  htmlFor="city"
-                  className="block font-mono text-xs uppercase tracking-wider text-muted"
-                >
-                  City
-                </label>
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  required
-                  autoComplete="address-level2"
-                  placeholder="Rochester"
-                  className="mt-1 w-full bg-transparent text-lg placeholder:text-muted/50 focus:outline-none"
-                />
-              </div>
-
-              <div className="p-4 w-28">
-                <label
-                  htmlFor="state"
-                  className="block font-mono text-xs uppercase tracking-wider text-muted"
-                >
-                  State
-                </label>
-                <select
-                  id="state"
-                  name="state"
-                  required
-                  defaultValue=""
-                  className="mt-1 w-full bg-transparent text-lg focus:outline-none"
-                >
-                  <option value="" disabled>
-                    —
-                  </option>
-                  {US_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="mt-4 w-full sm:w-auto px-8 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
-          >
-            Check my business
-          </button>
-
-          <p className="mt-3 font-mono text-xs text-muted">
-            Takes about a minute. No sign-up.
-          </p>
-        </form>
+        <HomeSearchForm
+          footnote={
+            <p className="mt-1.5 font-mono text-xs text-accent">
+              {auditCount.toLocaleString("en-US")}{" "}
+              {auditCount === 1 ? "audit" : "audits"} run so far
+            </p>
+          }
+        />
       </div>
     </main>
   );

@@ -44,6 +44,27 @@ export interface AppleInput {
   reason: string | null;
 }
 
+export interface LlmInput {
+  // false when ANTHROPIC_API_KEY is absent, the probe failed, or the
+  // reply was unreadable — the checks then read 'unavailable' and leave
+  // the math alone, never scoring 0.
+  checked: boolean;
+  askedAt: string | null;
+  model: string | null;
+  // Probe 1: surfaced in an answer to "best {category} in {city}".
+  // `recommended` is the scored verdict; `named` and `citedOwnSite` are
+  // the two ways to earn it, kept apart because "it said your name" and
+  // "it read your website" are different findings for the analysis.
+  recommended: boolean | null;
+  named: boolean | null;
+  citedOwnSite: boolean;
+  // Probe 2: found at all, and was the phone number it gave correct.
+  known: boolean | null;
+  statedPhone: string | null;
+  phoneMatches: boolean | null; // null = nothing to compare against
+  reason: string | null;
+}
+
 export interface PsiInput {
   available: boolean;
   performance: number | null; // 0-100
@@ -59,6 +80,7 @@ export interface AuditInputs {
   site: SiteInput;
   psi: PsiInput;
   apple?: AppleInput;
+  llm?: LlmInput;
   manual: Partial<Record<string, ManualAnswer>>;
   now: Date;
 }

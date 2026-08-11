@@ -55,6 +55,8 @@ export async function bumpUsage(counts: {
   audits?: number;
   places?: number;
   psi?: number;
+  llmProbes?: number;
+  llmSearches?: number;
 }): Promise<void> {
   const db = getServiceClient();
   const { error } = await db.rpc("bump_usage_counter", {
@@ -62,6 +64,28 @@ export async function bumpUsage(counts: {
     p_audits: counts.audits ?? 0,
     p_places: counts.places ?? 0,
     p_psi: counts.psi ?? 0,
+    p_llm_probes: counts.llmProbes ?? 0,
+    p_llm_searches: counts.llmSearches ?? 0,
   });
   if (error) throw new Error(`bump_usage_counter failed: ${error.message}`);
+}
+
+// The Claude probe is the only check billed per call on top of tokens
+// (web search runs $10 per 1,000 searches), so it gets a cap of its own
+// rather than riding on DAILY_AUDIT_CAP. Past the cap the audit still
+// completes — the two checks read 'unavailable' and are excluded from the
+// denominator, exactly as they do without an API key.
+export async function llmProbeAllowed(): Promise<boolean> {
+  if (!auditsEnabled()) return false;
+
+  const cap = Number(process.env.LLM_PROBE_DAILY_CAP ?? "20");
+  if (!Number.isFinite(cap) || cap <= 0) return false;
+
+  const db = getServiceClient();
+  const { data } = await db
+    .from("usage_counters")
+    .select("llm_probes")
+    .eq("day", todayUtc())
+    .maybeSingle();
+  return (data?.llm_probes ?? 0) < cap;
 }

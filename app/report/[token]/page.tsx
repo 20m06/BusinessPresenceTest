@@ -24,6 +24,11 @@ interface StatusPayload {
     coveragePct: number | null;
     hasWebsite: boolean | null;
   } | null;
+  llm: {
+    recommended: boolean | null;
+    knowsBusiness: boolean | null;
+    phoneMatches: boolean | null;
+  } | null;
   topFixes: Array<{ title: string; instruction: string; effort: string }>;
 }
 
@@ -31,8 +36,47 @@ const STEPS = [
   "Reading your Google profile",
   "Checking your website",
   "Measuring load speed on mobile",
+  "Asking an AI assistant about you",
   "Scoring",
 ];
+
+// One sampled answer, not a rate — the copy has to say so (CLAUDE.md §6.8).
+function llmVerdict(llm: NonNullable<StatusPayload["llm"]>): {
+  headline: string;
+  detail: string;
+  tone: "pass" | "warn" | "fail";
+} {
+  if (!llm.knowsBusiness) {
+    return {
+      tone: "fail",
+      headline: "An AI assistant could not find you",
+      detail:
+        "We asked Claude about your business by name, with web search on. It could not find you. More customers are asking an assistant where to go instead of opening Maps, and those customers are not hearing about you.",
+    };
+  }
+  if (llm.phoneMatches === false) {
+    return {
+      tone: "fail",
+      headline: "An AI assistant gave out the wrong phone number",
+      detail:
+        "Claude found your business but quoted a phone number that does not match your Google profile. Anyone acting on that answer is calling the wrong place.",
+    };
+  }
+  if (!llm.recommended) {
+    return {
+      tone: "warn",
+      headline: "An AI assistant knows you, but did not recommend you",
+      detail:
+        "Claude found your business when we asked by name, but did not mention you when we asked it to recommend businesses like yours nearby.",
+    };
+  }
+  return {
+    tone: "pass",
+    headline: "An AI assistant recommended you",
+    detail:
+      "Claude named your business when we asked it to recommend places like yours nearby, and found your correct details when we asked by name.",
+  };
+}
 
 export default function ReportPage({
   params,
@@ -174,12 +218,44 @@ export default function ReportPage({
             />
 
             <ul className="mt-6 text-sm text-muted space-y-1">
-              <li>found — can customers find you on Google</li>
+              <li>found — can customers find you on Google and ChatGPT/LLMs</li>
               <li>converts — can a visit turn into a sale</li>
               <li>reviews — your reputation on Google</li>
               <li>website — does your site load fast and work on phones</li>
               <li>control — do you hold your own keys</li>
             </ul>
+
+            {payload.llm && (() => {
+              const v = llmVerdict(payload.llm);
+              return (
+                <div className="mt-6 border border-rule bg-white p-4">
+                  <p className="font-mono text-xs tracking-[0.2em] uppercase text-muted">
+                    Asked an AI
+                  </p>
+                  <p
+                    className={`mt-2 font-medium ${
+                      v.tone === "pass"
+                        ? "text-pass"
+                        : v.tone === "warn"
+                          ? "text-warn"
+                          : "text-fail"
+                    }`}
+                  >
+                    {v.headline}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">{v.detail}</p>
+                  <p className="mt-3 font-mono text-xs text-muted">
+                    inferred · we asked once, on{" "}
+                    {new Date(payload.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    . Answers vary between people and change over time.
+                  </p>
+                </div>
+              );
+            })()}
 
             {payload.scores.resilience === null && (
               <div className="mt-6 border border-rule bg-white p-4">

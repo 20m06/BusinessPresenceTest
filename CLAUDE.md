@@ -94,6 +94,11 @@ Create `.env.local` for local dev and mirror every one of these into Vercel's pr
 # Google
 GOOGLE_MAPS_API_KEY=
 
+# Claude visibility probe (§8.4). A Claude Pro/Max subscription is NOT
+# this — create a key at console.anthropic.com, which bills separately.
+# Leave blank and the two llm_* checks read 'unavailable'; nothing breaks.
+ANTHROPIC_API_KEY=
+
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -115,6 +120,10 @@ NEXT_PUBLIC_OFFER_MODE=commercial
 DAILY_AUDIT_CAP=50
 PER_IP_DAILY_CAP=10
 AUDITS_ENABLED=true
+# The Claude probe is the only check billed per call on top of tokens, so
+# it gets its own cap. At ~$0.04/audit, 20/day is ~$24/month worst case.
+# Past the cap audits still complete; the llm_* checks read 'unavailable'.
+LLM_PROBE_DAILY_CAP=20
 
 # Secrets
 CRON_SECRET=
@@ -312,15 +321,22 @@ export const SCORING_CONFIG_VERSION = "1.0.0";
 
 Weights are within the dimension and must sum to 1.0.
 
+"Found" covers three surfaces, not one: Google, Apple Maps, and AI assistants. Weights below are as of scoring config **3.0.0**.
+
 | key | label | weight | Source | Logic |
 |---|---|---|---|---|
-| `gbp_exists` | Google profile found | 0.25 | Places | Found = 100, not found = 0. If 0, all other Discoverability checks are `unavailable`. |
-| `gbp_claimed` | Profile appears claimed | 0.15 | Places (inferred) | See 6.7 — heuristic. Confidence `inferred`, and add a `manual_required` confirm question. |
-| `category_specific` | Category is specific | 0.15 | Places | `primaryType` against a generic-terms denylist (`establishment`, `point_of_interest`, `store`, `food`, `restaurant` alone, `business`). Specific = 100, generic = 30, missing = 0. |
-| `hours_present` | Hours listed | 0.20 | Places | All 7 days present = 100; partial = 50; none = 0. |
-| `hours_special` | Holiday hours set | 0.05 | Places | Compare `currentOpeningHours` vs `regularOpeningHours`. Warn if no special hours exist within 60 days of a US holiday. |
-| `phone_present` | Phone number listed | 0.08 | Places | Present = 100. |
-| `photos_count` | Photos on profile | 0.12 | Places | 0 photos = 0; 1–4 = 30; 5–9 = 60; 10–19 = 85; 20+ = 100. |
+| `gbp_exists` | Google profile found | 0.17 | Places | Found = 100, not found = 0. If 0, all other *Google* checks are `unavailable` (Apple and the LLM checks are independent). |
+| `apple_listing_found` | Apple Maps listing found | 0.17 | Apple Maps Server API | Matched listing = 100, none = 0. Confidence `inferred` — matching name + location across two providers is a judgement. |
+| `llm_recommends` | AI assistants recommend you | 0.10 | Claude + web search | Named in the answer to "best {category} in {city}" = 100, absent = 0. A citation of the business's own domain counts as named. See 6.8. |
+| `llm_knows_you` | AI assistants know your details | 0.06 | Claude + web search | Found by name with a matching phone number = 100; found but quoting a phone number that isn't theirs = 50; not found = 0. See 6.8. |
+| `gbp_claimed` | Profile appears claimed | 0.10 | Places (inferred) | See 6.8 — heuristic. Confidence `inferred`, and add a `manual_required` confirm question. |
+| `category_specific` | Category is specific | 0.10 | Places | `primaryType` against a generic-terms denylist (`establishment`, `point_of_interest`, `store`, `food`, `restaurant` alone, `business`). Specific = 100, generic = 30, missing = 0. |
+| `hours_present` | Hours listed | 0.13 | Places | All 7 days present = 100; partial = 50; none = 0. |
+| `hours_special` | Holiday hours set | 0.03 | Places | Compare `currentOpeningHours` vs `regularOpeningHours`. Warn if no special hours exist within 60 days of a US holiday. |
+| `phone_present` | Phone number listed | 0.05 | Places | Present = 100. |
+| `photos_count` | Photos on profile | 0.09 | Places | 0 photos = 0; 1–4 = 30; 5–9 = 60; 10–19 = 85; 20+ = 100. |
+
+The two LLM checks are deliberately weighted below the map listings. A Google or Apple listing either exists or it doesn't; an assistant's answer is one sample that moves on its own between runs. Neither ever takes a headline slot — see 6.9.
 
 **NAP consistency is not automatable** without paid third-party data. Do not fake it. It becomes a manual question and is excluded from v1 scoring.
 
@@ -372,10 +388,11 @@ Yes = 100, No = 0, "Not sure" = 0 with a distinct flag. **"Not sure" is itself t
 
 ### 6.8 Heuristic checks — mandatory honesty
 
-Two checks cannot be measured directly and **must** carry `confidence: 'inferred'`, render with a visible "inferred" marker, and be paired with a manual confirmation question.
+Four checks cannot be measured directly and **must** carry `confidence: 'inferred'` and render with a visible "inferred" marker. The two Google ones are paired with a manual confirmation question.
 
 - **`gbp_claimed`.** The Places API does not expose claimed status. Infer from a composite signal: website present, phone present, complete hours, ≥5 photos, `businessStatus = OPERATIONAL`. 4+ signals → likely claimed. ≤2 → likely unclaimed. In between → indeterminate. Report copy must read *"Your profile appears unclaimed"*, never *"Your profile is unclaimed."*
 - **`owner_responds`.** Places returns a small sample of reviews, not the full set, and owner-response data is not consistently exposed. Compute the rate over whatever sample is returned, store the sample size in `raw_value`, and label the check *"based on N recent reviews."* Never state a full-population response rate.
+- **`llm_recommends` and `llm_knows_you`.** An LLM answer is a sample, not a fact. It varies by who is asking, from where, on which model version, on which day. **Each is asked exactly once per audit** — budget, not laziness (see 8.4) — so `raw_value` records `sampleSize: 1`, the model id, and the timestamp, and the report reads *"we asked once, on {date}. Answers vary between people and change over time."* Never write *"Claude doesn't know you"* as a standing fact, and never compute a percentage from one sample. Store the full prompt and answer in `audits.raw_llm`: an LLM response cannot be re-derived after the fact, so anything not captured at ask-time is gone permanently.
 
 ### 6.9 Ranking fixes by impact ÷ effort
 
@@ -388,6 +405,8 @@ priority_ratio = impact_points / effort_score
 ```
 
 Rank descending. `unavailable` and already-passing checks are excluded. This is deliberately biased toward cheap wins: *"add your hours"* should beat *"rebuild your site"* every time, because owners abandon reports that lead with expensive advice.
+
+**Headline exclusions.** A check with no cheap version never takes one of the three headline slots, whatever its ratio — the headline list is a to-do for this week. `llm_recommends` and `llm_knows_you` are excluded (`HEADLINE_EXCLUDED_CHECKS` in the config): failing `llm_recommends` is worth 3.5 points of the overall score and would otherwise outrank real work with advice the owner cannot act on. They still score, still appear in full findings, and get their own callout on report page one.
 
 Assign a `fix_cost_bucket` and a one-sentence `fix_instruction` to every check in the config. **Instructions are directives, not tutorials** — *"Add photos of your food, storefront, and interior to your Google Business Profile. Aim for 20."* Not a numbered walkthrough. Step-by-step is the paid/club service.
 
@@ -458,6 +477,27 @@ Plain `fetch` with a 15s timeout and a descriptive User-Agent identifying the to
 
 ---
 
+### 8.4 Claude visibility probe
+
+`@anthropic-ai/sdk` against `claude-sonnet-5`, with the `web_search_20260209` server tool. **This is a Google-independent check on the business, not on the site** — it runs whether or not there's a website.
+
+Two messages, sent in parallel, **once each**:
+
+1. **Discovery** — *"What are the best {primaryType} in {city}, {state}? Recommend specific businesses by name."* Scored by whether the business's name appears in the answer (normalized containment, so *"Tony's Barber Shop"* matches *"Tonys Barbershop"*), or its own domain appears in the citations.
+2. **Knowledge** — *"Do you know the business "{name}" in {city}, {state}? Search for it, then give its phone number."* The system prompt requires a trailing `RESULT: found=<yes|no>; phone=<...>` line. Compare the last 10 digits against the Places phone number.
+
+Settings and why:
+
+- `user_location` is set to the business's own city. The realistic scenario is a customer standing nearby asking their phone, not a search from across the country.
+- `max_uses: 2` per query. Web search bills **$10 per 1,000 searches** on top of the tokens the results occupy, so this is the real cost cap, not a quality knob.
+- Adaptive thinking stays **on** with `effort: "medium"`. Sonnet 5 reaches for tools less readily with thinking disabled, and an un-searched *"no"* would be a false negative written permanently into the dataset.
+- Timeout 45s, one retry. On failure, timeout, or an unparseable reply, both checks are `unavailable` — **never** `fail`. An answer we couldn't read is not a "no" (rule 7).
+- No API key configured → same thing: `unavailable`, excluded from the denominator. The audit completes normally, exactly as it does without Apple Maps credentials.
+
+Pure parsing lives in `/lib/llm-answer.ts` so it is unit-testable without a network call; the request itself is in `/lib/clients/anthropic.ts`. Same split as `apple-match.ts` / `clients/apple-maps.ts`.
+
+**ChatGPT is deliberately not covered in v1.** Scraping chatgpt.com violates OpenAI's ToS and rule 4. The legitimate route is the OpenAI API — which does *not* require a ChatGPT Plus subscription, being separate pay-as-you-go billing — and it is a second vendor, second key, and second budget line. Noted in `ROADMAP.md`.
+
 ## 9. The report page
 
 ### 9.1 Structure — page one only
@@ -466,10 +506,11 @@ The owner reads page one. Everything else is defensibility.
 
 1. Business name, city, audit date.
 2. **Overall score** as the visual anchor, with coverage disclosure: *"Scored on 95% of checks. Answer 4 questions to complete it."*
-3. Five dimension bars with one-line plain-language labels.
-4. **Your three highest-impact fixes this week** — ranked by `priority_ratio`. Each: what's wrong (one line), what to do (one line), rough effort ("4 minutes" / "an afternoon").
-5. Single primary CTA (Section 13).
-6. Link to full findings.
+3. Five dimension bars with one-line plain-language labels. "found" reads *"can customers and AI assistants find you"*.
+4. **The AI callout** — one box saying what happened when we asked Claude, colour-coded pass/warn/fail, with the inferred marker and *"we asked once, on {date}. Answers vary between people and change over time."* This sits above the fixes precisely because it is not one of them (§6.9).
+5. **Your three highest-impact fixes this week** — ranked by `priority_ratio`, excluding `HEADLINE_EXCLUDED_CHECKS`. Each: what's wrong (one line), what to do (one line), rough effort ("4 minutes" / "an afternoon").
+6. Single primary CTA (Section 13).
+7. Link to full findings.
 
 ### 9.2 Page two
 
@@ -533,6 +574,8 @@ Before **any** paid API call, in this order:
 Increment counters in the same transaction that creates the audit. When the daily cap is hit, show: *"We've hit today's audit limit. Check back tomorrow, or book a call and we'll run yours manually."* — with the Calendly link. A cap hit becomes a lead.
 
 Also: cache Place Details results for 24h keyed by `place_id`, so a re-search of the same business inside a day costs nothing extra.
+
+**The Claude probe has a fourth gate of its own**, checked in `llmProbeAllowed()` before the request: today's `usage_counters.llm_probes < LLM_PROBE_DAILY_CAP`. It is the only check billed per call *on top of* tokens — web search runs $10 per 1,000 searches — and the $50/month ceiling is shared with Google. Hitting this cap must never fail an audit: the two `llm_*` checks read `unavailable` and drop out of the denominator, exactly as they do with no API key. `usage_counters` tracks `llm_probes` and `llm_searches` separately so the real spend is visible in the SQL editor.
 
 ---
 
@@ -627,6 +670,10 @@ Work one phase at a time. End every phase with something the owner can see runni
 - [ ] Business with no Google profile fails gracefully with a clear message
 - [ ] Every heuristic check displays an "inferred" badge
 - [ ] Unavailable checks are excluded from denominators, never scored 0
+- [ ] With `ANTHROPIC_API_KEY` unset, the audit completes and both `llm_*` checks read `unavailable` — not `fail`
+- [ ] Past `LLM_PROBE_DAILY_CAP`, the same: audit completes, `llm_*` unavailable
+- [ ] The AI callout never appears in the three headline fixes, even when it is the worst-scoring check
+- [ ] `audits.raw_llm` holds both prompts and both full answers
 - [ ] Report readable at 360px width
 - [ ] Daily cap blocks audit 51 and shows the Calendly fallback
 - [ ] Kill switch stops all paid calls

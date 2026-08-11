@@ -14,6 +14,7 @@ import {
   HOLIDAY_WINDOW_DAYS,
   HOURS_PARTIAL_SCORE,
   HOURS_SPECIAL_WARN_SCORE,
+  LLM_KNOWS_SCORES,
   NO_WEBSITE_FIX,
   PHOTO_TIERS,
   RATING_TIERS,
@@ -170,7 +171,7 @@ export function isHolidayWithin(now: Date, windowDays: number): boolean {
 // ── The engine ───────────────────────────────────────────────────────
 
 export function evaluateAudit(inputs: AuditInputs): AuditScores {
-  const { place, site, psi, apple, manual, now } = inputs;
+  const { place, site, psi, apple, llm, manual, now } = inputs;
   const checks: CheckResult[] = [];
 
   // Apple Maps presence — independent of the Google profile, since a
@@ -190,6 +191,68 @@ export function evaluateAudit(inputs: AuditInputs): AuditScores {
             reason: apple.reason,
           }
         : { reason: "apple_not_configured" },
+    })
+  );
+
+  // AI assistant visibility — asked once each, so both are 'inferred' and
+  // the raw value carries the sample size and date so the report can say
+  // "asked once on {date}" instead of implying a rate (CLAUDE.md §6.8).
+  // Independent of the Google profile: an assistant can surface a business
+  // from its website or a directory with no Google listing at all.
+  const llmProbed = !!llm?.checked;
+  checks.push(
+    make("llm_recommends", {
+      score: !llmProbed || llm.recommended === null ? null : llm.recommended ? 100 : 0,
+      status: !llmProbed || llm.recommended === null ? "unavailable" : undefined,
+      confidence: "inferred",
+      rawValue: llmProbed
+        ? {
+            recommended: llm.recommended,
+            named: llm.named,
+            citedOwnSite: llm.citedOwnSite,
+            model: llm.model,
+            askedAt: llm.askedAt,
+            sampleSize: 1,
+          }
+        : { reason: llm?.reason ?? "llm_not_configured" },
+      fixInstruction:
+        llmProbed && llm.recommended === false
+          ? "When we asked Claude to recommend businesses like yours in your area, it did not name you. Assistants read your Google profile, your website, and directory listings — filling those in completely, with your services written as plain text, is what gets you into the answer."
+          : undefined,
+    })
+  );
+
+  const knowsScore =
+    !llmProbed || llm.known === null
+      ? null
+      : !llm.known
+        ? LLM_KNOWS_SCORES.notFound
+        : llm.phoneMatches === false
+          ? LLM_KNOWS_SCORES.wrongPhone
+          : LLM_KNOWS_SCORES.correct;
+  checks.push(
+    make("llm_knows_you", {
+      score: knowsScore,
+      status: knowsScore === null ? "unavailable" : undefined,
+      confidence: "inferred",
+      rawValue: llmProbed
+        ? {
+            known: llm.known,
+            statedPhone: llm.statedPhone,
+            phoneMatches: llm.phoneMatches,
+            model: llm.model,
+            askedAt: llm.askedAt,
+            sampleSize: 1,
+          }
+        : { reason: llm?.reason ?? "llm_not_configured" },
+      fixInstruction:
+        !llmProbed || llm.known === null
+          ? undefined
+          : !llm.known
+            ? "We asked Claude about your business by name and it could not find you. Put your name, address, phone number, and hours as plain text on your own website, worded exactly as they appear on your Google profile."
+            : llm.phoneMatches === false
+              ? `We asked Claude about your business and it gave the phone number ${llm.statedPhone}, which is not the number on your Google profile. Customers acting on that answer are calling the wrong place. Make sure your correct number appears as plain text on your website and everywhere you are listed.`
+              : undefined,
     })
   );
 

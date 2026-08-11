@@ -184,19 +184,49 @@ const FIX_PRICE_USD: Record<FixPriceBucket, number> = {
 /** Bucket missing or unrecognised: charge the middle tier, never the top. */
 const FIX_PRICE_FALLBACK_USD = 75;
 
+// ---------------------------------------------------------------------------
+// DEMO ONLY — fabricated point gains. Owner's call, 2026-08-11, for a class
+// demo. Set to false to restore the real numbers; nothing else needs editing.
+//
+// These are made up. The honest per-check gain is already computed by
+// scoreGainForCheck() in scoring/score-gain.ts, tested against a from-scratch
+// recomposition of the overall score, and still wired up behind this flag.
+// The real numbers on the current fixture range from 0.1 to 6.7 points, so a
+// flat "4 pts" beside a $200 button is both an overstatement on the cheap
+// checks and an understatement on the valuable ones.
+//
+// This contradicts rule 7 (never invent data) and rule 3 (honest confidence
+// labels), which is survivable in a pitch and not survivable in front of a
+// paying owner or in the write-up. Flip it back before either.
+// ---------------------------------------------------------------------------
+const DEMO_FIXED_GAINS = true;
+
+const DEMO_GAIN_BY_BUCKET: Record<FixPriceBucket, string> = {
+  minutes: "1 pt", // $50
+  hours: "2 pts", // $75
+  days: "4 pts", // $200
+  money: "4 pts", // $200
+};
+
+const DEMO_GAIN_FALLBACK = "2 pts";
+
 export interface FixOffer {
   /** Band copy. */
   label: string;
   /** "$50" in commercial mode, "Free" in pro_bono. */
   price: string;
   href: string;
+  /** "Adds 2.4 pts to your score", or null when the gain is unknown. */
+  gainNote: string | null;
   /** Spoken by screen readers in place of the band's visual shorthand. */
   ariaLabel: string;
 }
 
+/** `gain` is pre-formatted by formatGain() in scoring/score-gain.ts. */
 export function getFixOffer(
   bucket: string | null | undefined,
-  checkLabel: string
+  checkLabel: string,
+  gain?: string | null
 ): FixOffer {
   const mode = process.env.NEXT_PUBLIC_OFFER_MODE ?? "commercial";
   const amount =
@@ -204,13 +234,23 @@ export function getFixOffer(
       ? FIX_PRICE_USD[bucket as FixPriceBucket]
       : FIX_PRICE_FALLBACK_USD;
 
+  const shownGain = DEMO_FIXED_GAINS
+    ? bucket && bucket in DEMO_GAIN_BY_BUCKET
+      ? DEMO_GAIN_BY_BUCKET[bucket as FixPriceBucket]
+      : DEMO_GAIN_FALLBACK
+    : gain;
+  const gainNote = shownGain ? `Adds ${shownGain} to your score` : null;
+
   if (mode === "pro_bono") {
     return {
       label: "Fix it now in 5 minutes!",
       price: "Free",
       href: process.env.NEXT_PUBLIC_CALENDLY_URL ??
         "https://calendly.com/michaelkosenko456/30min",
-      ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free`,
+      gainNote,
+      ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free${
+        shownGain ? `. Adds ${shownGain} to your score` : ""
+      }`,
     };
   }
 
@@ -218,7 +258,10 @@ export function getFixOffer(
     label: "Fix it now in 5 minutes!",
     price: `$${amount}`,
     href: "https://dashboard.stripe.com/login",
-    ariaLabel: `Pay $${amount} to have us fix "${checkLabel}" for you`,
+    gainNote,
+    ariaLabel: `Pay $${amount} to have us fix "${checkLabel}" for you${
+      shownGain ? `. Adds ${shownGain} to your score` : ""
+    }`,
   };
 }
 

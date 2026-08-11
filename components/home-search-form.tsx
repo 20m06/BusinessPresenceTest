@@ -14,7 +14,7 @@ const US_STATES = [
  * The landing page search form. Split out of app/page.tsx so that page can
  * be a server component and read the audit count from Supabase directly.
  */
-export default function HomeSearchForm({ footnote }: { footnote?: React.ReactNode }) {
+export default function HomeSearchForm() {
   const router = useRouter();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -105,8 +105,6 @@ export default function HomeSearchForm({ footnote }: { footnote?: React.ReactNod
       <p className="mt-3 font-mono text-xs text-muted">
         Takes about a minute. No sign-up.
       </p>
-
-      {footnote}
     </form>
   );
 }

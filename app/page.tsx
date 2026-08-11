@@ -20,19 +20,17 @@ export default async function Home() {
           Can customers find your business online?
         </h1>
 
+        <p className="mt-3 font-mono text-sm font-semibold text-accent">
+          {auditCount.toLocaleString("en-US")}{" "}
+          {auditCount === 1 ? "audit" : "audits"} run so far
+        </p>
+
         <p className="mt-3 text-muted leading-relaxed">
           We check your Google profile and your website. You get a score and
           the three fixes that matter most. Free.
         </p>
 
-        <HomeSearchForm
-          footnote={
-            <p className="mt-1.5 font-mono text-xs text-accent">
-              {auditCount.toLocaleString("en-US")}{" "}
-              {auditCount === 1 ? "audit" : "audits"} run so far
-            </p>
-          }
-        />
+        <HomeSearchForm />
       </div>
     </main>
   );

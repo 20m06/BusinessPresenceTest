@@ -592,7 +592,15 @@ Report CTA block, headline *"Want these fixed for you?"*:
 - **Competitor benchmark** — how the business ranks against similar businesses in the same ZIP.
 - **Done-for-you fixes** — implementation of the top three.
 
-Single button: *"Book a free 20-minute review"* → Calendly. **No prices anywhere on the site.** Pricing is an in-person conversation after the meeting is booked — the owner's explicit decision, and it's the right one for a service business at this stage.
+Single button: *"Book a free 20-minute review"* → Calendly. The CTA block itself carries **no prices** — those four services are scoped on a call, not bought off a page.
+
+**Per-fix pricing on report page two** (owner decision, 2026-08-11 — this reverses the earlier "no prices anywhere on the site" rule). Every check scoring below 100 gets a blue band beneath it reading *"Fix it now in 5 minutes!"* with a price pill on the right. Price is derived from the check's own `fixCostBucket` — `minutes` → $50, `hours` → $75, `days` and `money` → $200 — so a check added to `config.ts` is priced automatically and its price can never disagree with the effort estimate shown on page one. Copy and tiers live in `/lib/offers.ts` (`getFixOffer`), never in the component.
+
+Bands are shown only for checks with a real score. `unavailable` and `manual_required` checks carry a null score and get no band: selling a fix for something we could not measure, or for a question only the owner can answer, would be selling air.
+
+In `pro_bono` mode the pill reads *"Free"* and links to Calendly instead. A free student-club service quoting $200 would contradict the whole framing, so the price must never survive the mode flip.
+
+> **Demo caveat — revisit before real traffic.** The band currently links to `https://dashboard.stripe.com/login`, which is the *merchant* sign-in, not a customer checkout. It exists to make the flow look connected in a pitch. A real owner clicking a $75 pill lands on a Stripe login for an account they do not have. Before the site is put in front of actual businesses, this must become either a real Checkout session or the Calendly link.
 
 Peer benchmarking is deliberately excluded from the free report and positioned as a paid deliverable. This also conveniently avoids the extra Nearby Search cost per audit.
 

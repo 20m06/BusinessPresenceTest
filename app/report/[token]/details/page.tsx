@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { getFixOffer } from "@/lib/offers";
 
 // Report page two (CLAUDE.md §9.2): every check grouped by dimension,
 // with status, confidence badge, and raw value. Inferred checks visibly
@@ -16,6 +17,7 @@ interface CheckRow {
   normalized_score: number | null;
   raw_value: Record<string, unknown> | null;
   weight_in_dim: number;
+  fix_cost_bucket: string | null;
 }
 
 interface Payload {
@@ -139,6 +141,34 @@ function describeRaw(row: CheckRow): string | null {
   }
 }
 
+/**
+ * Paid-fix band, shown under any check that scored below 100.
+ *
+ * Deliberately not shown for `unavailable` or `manual_required` checks: both
+ * carry a null score, and selling a fix for something we could not measure —
+ * or for a question only the owner can answer — would be selling air.
+ */
+function FixBand({ row }: { row: CheckRow }) {
+  if (row.normalized_score === null || row.normalized_score >= 100) return null;
+
+  const offer = getFixOffer(row.fix_cost_bucket, row.label);
+
+  return (
+    <a
+      href={offer.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={offer.ariaLabel}
+      className="group flex items-center justify-between gap-3 bg-offer px-4 py-2.5 text-white hover:brightness-95 transition-[filter]"
+    >
+      <span className="text-sm font-medium">{offer.label}</span>
+      <span className="font-mono text-sm font-semibold bg-offer-deep rounded-full px-3 py-1 shrink-0">
+        {offer.price}
+      </span>
+    </a>
+  );
+}
+
 export default function DetailsPage({
   params,
 }: {
@@ -213,24 +243,27 @@ export default function DetailsPage({
                       const s = STATUS_LABELS[row.status];
                       const desc = describeRaw(row);
                       return (
-                        <li key={row.check_key} className="p-4">
-                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <span className="font-medium">{row.label}</span>
-                            <span className={`font-mono text-xs ${s.cls}`}>{s.text}</span>
-                            {row.confidence === "inferred" && (
-                              <span className="font-mono text-[10px] uppercase tracking-wider border border-rule px-1 text-muted">
-                                inferred
-                              </span>
-                            )}
-                            {row.normalized_score !== null && (
-                              <span className="ml-auto font-mono text-sm">
-                                {Math.round(row.normalized_score)}
-                              </span>
+                        <li key={row.check_key}>
+                          <div className="p-4">
+                            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                              <span className="font-medium">{row.label}</span>
+                              <span className={`font-mono text-xs ${s.cls}`}>{s.text}</span>
+                              {row.confidence === "inferred" && (
+                                <span className="font-mono text-[10px] uppercase tracking-wider border border-rule px-1 text-muted">
+                                  inferred
+                                </span>
+                              )}
+                              {row.normalized_score !== null && (
+                                <span className="ml-auto font-mono text-sm">
+                                  {Math.round(row.normalized_score)}
+                                </span>
+                              )}
+                            </div>
+                            {desc && (
+                              <p className="mt-1 font-mono text-xs text-muted">{desc}</p>
                             )}
                           </div>
-                          {desc && (
-                            <p className="mt-1 font-mono text-xs text-muted">{desc}</p>
-                          )}
+                          <FixBand row={row} />
                         </li>
                       );
                     })}

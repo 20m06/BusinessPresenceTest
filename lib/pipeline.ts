@@ -28,17 +28,36 @@ import { DIMENSION_LABELS, type Dimension } from "./scoring/config";
 // The audit processing pipeline, shared by the public process route and
 // the cron re-run system. Idempotent per audit row.
 
+/**
+ * Past this, a 'running' row is abandoned rather than in flight: it is
+ * longer than the process route's own maxDuration, so no live invocation
+ * can still be working on it. Killed runs (see the PSI timeout budget in
+ * clients/psi.ts) used to strand the row at 'running' permanently.
+ */
+export const STALE_RUNNING_MS = 90_000;
+
 export async function processAuditById(auditId: string): Promise<"complete" | "running" | "failed"> {
   const db = getServiceClient();
 
   const { data: audit } = await db
     .from("audits")
-    .select("id, status, business_id, contact_id, run_type, public_token, raw_places")
+    .select("id, status, business_id, contact_id, run_type, public_token, raw_places, created_at")
     .eq("id", auditId)
     .maybeSingle();
   if (!audit) throw new Error("audit not found");
   if (audit.status === "complete") return "complete";
-  if (audit.status === "running") return "running";
+
+  const isStaleRun =
+    audit.status === "running" &&
+    Date.now() - new Date(audit.created_at).getTime() >= STALE_RUNNING_MS;
+  if (audit.status === "running" && !isStaleRun) return "running";
+
+  // Checks are inserted before the status update below, so a run killed
+  // between the two leaves orphan rows. Clear them before retrying or the
+  // report would show every check twice.
+  if (isStaleRun) {
+    await db.from("audit_checks").delete().eq("audit_id", audit.id);
+  }
 
   await db.from("audits").update({ status: "running" }).eq("id", audit.id);
 

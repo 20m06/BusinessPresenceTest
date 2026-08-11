@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
-import { processAuditById } from "@/lib/pipeline";
+import { processAuditById, STALE_RUNNING_MS } from "@/lib/pipeline";
 
 // PSI can take 20-30s; keep this route fast-ish but allow for it.
 export const maxDuration = 60;
@@ -14,14 +14,26 @@ export async function POST(
 
   const { data: audit } = await db
     .from("audits")
-    .select("id, status")
+    .select("id, status, created_at")
     .eq("public_token", token)
     .maybeSingle();
   if (!audit) {
     return NextResponse.json({ error: "not_found", message: "Audit not found." }, { status: 404 });
   }
-  if (audit.status === "complete" || audit.status === "running") {
+  if (audit.status === "complete") {
     return NextResponse.json({ status: audit.status });
+  }
+  // A 'running' row normally means another invocation has it. But if the
+  // function was killed mid-run (see the PSI timeout budget), nothing is
+  // left to finish it and the row would stay 'running' forever — the route
+  // used to return early here, so retrying could never rescue it. Past the
+  // route's own maxDuration no live invocation can still be working on it,
+  // so it is safe to pick up.
+  if (audit.status === "running") {
+    const ageMs = Date.now() - new Date(audit.created_at).getTime();
+    if (ageMs < STALE_RUNNING_MS) {
+      return NextResponse.json({ status: audit.status });
+    }
   }
 
   const status = await processAuditById(audit.id);

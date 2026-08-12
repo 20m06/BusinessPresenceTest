@@ -42,6 +42,13 @@ export interface OfferCopy {
   services: OfferService[];
   /** Shown beside every service in the report CTA block. "Free" in pro_bono. */
   servicePrice: string;
+  /** Where a service price goes when clicked. */
+  serviceHref: string;
+  /**
+   * Countdown line above the CTA block, or null when the mode has nothing
+   * to count down to. Demo-only urgency — see free-fix-timer.tsx.
+   */
+  urgencyLine: string | null;
   buttonLabel: string;
   clubLine: string | null;
   calendlyUrl: string;
@@ -140,6 +147,10 @@ export function getOffers(): OfferCopy {
       },
       services: SERVICES,
       servicePrice: "Free",
+      serviceHref: calendlyUrl,
+      // Everything here is already free; a countdown to free would be
+      // nonsense, and pressuring owners is the opposite of the framing.
+      urgencyLine: null,
       buttonLabel: "Book time with a student advisor",
       clubLine: "A free service of the student club at Diablo Valley College.",
       calendlyUrl,
@@ -169,6 +180,8 @@ export function getOffers(): OfferCopy {
     },
     services: SERVICES,
     servicePrice: "$200",
+    serviceHref: "https://dashboard.stripe.com/login",
+    urgencyLine: "First quick fix is free during the next 24 hours!",
     buttonLabel: "Book a free 20-minute coffee chat",
     clubLine: null,
     calendlyUrl,

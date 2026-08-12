@@ -40,6 +40,8 @@ export interface OfferCopy {
   serviceCtaLine: string;
   founder: OfferFounder;
   services: OfferService[];
+  /** Shown beside every service in the report CTA block. "Free" in pro_bono. */
+  servicePrice: string;
   buttonLabel: string;
   clubLine: string | null;
   calendlyUrl: string;
@@ -84,6 +86,18 @@ const SERVICES: OfferService[] = [
     ],
   },
   {
+    slug: "chat-widget",
+    name: "Website chat widget",
+    description: "Answers questions on your site and passes real leads to you.",
+    body: [
+      "Most people who land on a small business website have one question. What time do you close, do you take walk-ins, is there parking, do you do this particular thing. If the answer is not on the page, they leave and ask someone else — usually a competitor, sometimes an AI assistant that may not know your business either.",
+      "A chat widget puts the answer where the question happens. We set one up on your site, in your colours, and we fill it with the answers to what your customers actually ask. It knows your hours, your address, your services, and the handful of questions that come up over and over.",
+      "When someone asks something it cannot answer, it takes their name and number instead of dead-ending them, and that lands with you as a message. This is the part owners underestimate: an unanswered question on a website is a customer you never knew you had.",
+      "It works alongside the phone agent if you have both, drawing on the same answers, so you are not maintaining two versions of your hours. And you can read back every conversation, which tends to show a question worth answering on the page itself.",
+      "You can switch it off whenever you want, and nothing about it changes who owns your website.",
+    ],
+  },
+  {
     slug: "competitor-benchmark",
     name: "Competitor benchmark",
     description: "How you rank against similar businesses in your area.",
@@ -125,6 +139,7 @@ export function getOffers(): OfferCopy {
         ],
       },
       services: SERVICES,
+      servicePrice: "Free",
       buttonLabel: "Book time with a student advisor",
       clubLine: "A free service of the student club at Diablo Valley College.",
       calendlyUrl,
@@ -153,6 +168,7 @@ export function getOffers(): OfferCopy {
       ],
     },
     services: SERVICES,
+    servicePrice: "$200",
     buttonLabel: "Book a free 20-minute coffee chat",
     clubLine: null,
     calendlyUrl,

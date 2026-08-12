@@ -323,7 +323,12 @@ export default function ReportPage({
               <ul className="mt-4 space-y-3">
                 {offers.services.map((s) => (
                   <li key={s.name}>
-                    <p className="text-sm font-medium">{s.name}</p>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-sm font-medium">{s.name}</p>
+                      <span className="font-mono text-sm font-semibold text-offer-deep shrink-0">
+                        {offers.servicePrice}
+                      </span>
+                    </div>
                     <p className="text-sm text-muted">{s.description}</p>
                   </li>
                 ))}

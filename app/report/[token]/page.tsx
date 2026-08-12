@@ -273,6 +273,25 @@ export default function ReportPage({
               </div>
             )}
 
+            {/* Sits after the control questions and before the fixes, but
+                outside the block above on purpose: that box disappears once
+                Resilience is answered, and these two must not go with it. */}
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href={`/report/${token}/details`}
+                className="underline underline-offset-4"
+              >
+                See every check we ran →
+              </Link>
+              {/* Demo placeholder — deliberately does nothing yet. */}
+              <button
+                type="button"
+                className="px-6 py-2.5 border border-ink font-medium cursor-pointer hover:bg-ink hover:text-paper"
+              >
+                Download the report
+              </button>
+            </div>
+
             {payload.topFixes.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
@@ -344,14 +363,6 @@ export default function ReportPage({
               )}
             </div>
 
-            <p className="mt-8">
-              <Link
-                href={`/report/${token}/details`}
-                className="underline underline-offset-4"
-              >
-                See every check we ran →
-              </Link>
-            </p>
           </div>
         )}
       </div>

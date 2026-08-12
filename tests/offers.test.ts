@@ -44,6 +44,23 @@ describe("offer mode", () => {
     expect(getFixOffer(null, "c").price).toBe("$75");
   });
 
+  it("counts down only in commercial mode", () => {
+    process.env.NEXT_PUBLIC_OFFER_MODE = "commercial";
+    expect(getOffers().urgencyLine).toContain("24 hours");
+
+    // A countdown to a free offer, in the mode where everything is
+    // already free, would be both meaningless and coercive.
+    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
+    expect(getOffers().urgencyLine).toBeNull();
+  });
+
+  it("sends the service price somewhere appropriate to the mode", () => {
+    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
+    const proBono = getOffers();
+    expect(proBono.serviceHref).not.toContain("stripe");
+    expect(proBono.serviceHref).toContain("calendly");
+  });
+
   it("gives every service a page of its own", () => {
     // SERVICES drives /services/[slug]; a listed service with no slug
     // would render a dead link from the report CTA block.

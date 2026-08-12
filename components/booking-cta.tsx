@@ -3,7 +3,8 @@ import { getOffers } from "@/lib/offers";
 /**
  * Booking block for the marketing pages. All wording comes from
  * lib/offers.ts so NEXT_PUBLIC_OFFER_MODE converts it with the rest of
- * the site (CLAUDE.md §13). No prices, here or anywhere else.
+ * the site (CLAUDE.md §13). No prices on this block — the marketing
+ * pages still scope work on a call. Prices live on the report only.
  */
 export default function BookingCta({ line }: { line?: string }) {
   const { buttonLabel, calendlyUrl, clubLine, serviceCtaLine } = getOffers();

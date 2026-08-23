@@ -1,4 +1,6 @@
-# CLAUDE.md — Small Business Web Presence Scorecard
+# CLAUDE.md — Pro Bono Consulting: Small Business Web Presence Scorecard
+
+> **What this project is.** Free audit software for **Pro Bono Consulting**, a student club at Diablo Valley College. It is not a startup, not a product, and not a business. Nothing is sold, nothing is charged, and there is no commercial layer to build or restore. Any earlier framing of this project as a for-profit venture is void — see Section 13.
 
 > **How to use this file:** Save it as `CLAUDE.md` in the root of an empty folder. Open Claude Code in that folder. Claude Code reads this file automatically on every session. Then work through the build phases in Section 15, one prompt at a time. Do not paste the whole file as a prompt — it lives on disk and gets read automatically.
 
@@ -31,12 +33,14 @@
 
 A web tool that scores a local small business's online presence and returns a prioritized, one-page action report.
 
+It is run free of charge by Pro Bono Consulting, a student club at Diablo Valley College. Owners are never charged and never asked to buy anything.
+
 **Two audiences, one system:**
 
 - **Public self-serve.** Anyone types a business name and city, gets an automated score and a report page, receives an email copy.
-- **Clinic cohort.** A student club recruits ~40 local businesses (immigrant-owned restaurants, barbershops, laundromats), audits each one, and re-audits at 30 and 90 days to measure whether recommended fixes moved real numbers.
+- **Clinic cohort.** The club recruits ~40 local businesses (immigrant-owned restaurants, barbershops, laundromats), audits each one, and re-audits at 30 and 90 days to measure whether recommended fixes moved real numbers.
 
-The clinic is the point. The public tool is the recruiting funnel and the scalable product surface. **Both must exist from day one, sharing one data model.**
+The clinic is the point. The public tool is how businesses find the club and how the club serves the ones it cannot meet in person. **Both must exist from day one, sharing one data model.**
 
 ### 1.1 Why the data model matters more than the UI
 
@@ -74,7 +78,7 @@ Do not substitute without asking.
 | Framework | **Next.js (App Router), TypeScript** | Use the current stable version. |
 | Styling | **Tailwind CSS** | |
 | Database | **Supabase (Postgres)** | Access server-side with the service role key via `@supabase/supabase-js`. |
-| Hosting | **Vercel** | Hobby tier. Note: Hobby is non-commercial — if real money is ever charged through the site, upgrade. In-person upsells are fine. |
+| Hosting | **Vercel** | Hobby tier, permanently. Hobby forbids commercial use; nothing is ever charged here, so the tier fits the project rather than merely tolerating it. |
 | Email | **Resend** | |
 | HTML parsing | **cheerio** | |
 | Scheduling | **Vercel Cron** | One daily job. |
@@ -407,7 +411,7 @@ Rank descending. `unavailable` and already-passing checks are excluded. This is 
 
 **Headline exclusions.** A check with no cheap version never takes one of the three headline slots, whatever its ratio — the headline list is a to-do for this week. `llm_recommends` and `llm_knows_you` are excluded (`HEADLINE_EXCLUDED_CHECKS` in the config): failing `llm_recommends` is worth 3.5 points of the overall score and would otherwise outrank real work with advice the owner cannot act on. They still score, still appear in full findings, and get their own callout on report page one.
 
-Assign a `fix_cost_bucket` and a one-sentence `fix_instruction` to every check in the config. **Instructions are directives, not tutorials** — *"Add photos of your food, storefront, and interior to your Google Business Profile. Aim for 20."* Not a numbered walkthrough. Step-by-step is the paid/club service.
+Assign a `fix_cost_bucket` and a one-sentence `fix_instruction` to every check in the config. **Instructions are directives, not tutorials** — *"Add photos of your food, storefront, and interior to your Google Business Profile. Aim for 20."* Not a numbered walkthrough. Step-by-step is what an advisor walks through on the call.
 
 ### 6.10 Composition
 
@@ -689,14 +693,14 @@ Work one phase at a time. End every phase with something the owner can see runni
 
 Do not build these. Note them in a `ROADMAP.md` instead.
 
-- Peer/competitor benchmarking (paid deliverable + extra API cost)
+- Peer/competitor benchmarking — costs an extra Nearby Search per audit against the $50/month ceiling; an advisor covers it on the call instead
 - Category-specific scoring branches (food vs service) — generic v1 per owner's decision
 - Admin dashboard — owner will use the Supabase SQL editor
-- LLM-generated fix copy or review replies (that's the paid product)
+- LLM-generated fix copy or review replies — an advisor drafts these with the owner
 - PDF export — hosted page + email only
 - Yelp / Facebook / Apple Maps data
 - User accounts or login
-- Payments
+- Payments — permanently, not just in v1. There is nothing to pay for.
 
 ---
 
@@ -704,8 +708,13 @@ Do not build these. Note them in a `ROADMAP.md` instead.
 
 Ask these when the relevant phase arrives — do not block Phase 1 on them.
 
-1. **Domain** — buying one before launch? Determines whether email works at all. *(Phase 8)*
-2. **Club name and college** — needed for `pro_bono` copy and the privacy page. *(Phase 8)*
-3. **Per-IP cap** — keep at 10, or raise to 50? *(Phase 3)*
-4. **Publication intent** — is a paper, poster, or transfer-application write-up planned? If yes, say so at Phase 2 so `consent_research` wording and the retained fields are right the first time. This cannot be fixed later. *(Phase 2)*
-5. **Cohort geography** — which city/ZIPs? Affects nothing in v1 but determines whether benchmarking is feasible in v2. *(Phase 10)*
+1. **Domain** — buying one before launch? Determines whether email works at all. Currently `EMAIL_ENABLED=false`, so no owner receives a report by email. *(Phase 8)*
+2. **Cohort geography** — which city/ZIPs? Affects nothing in v1 but determines whether benchmarking is feasible in v2. *(Phase 10)*
+
+### Already answered — do not re-ask
+
+- **Club name and college** — Pro Bono Consulting, a student club at Diablo Valley College. Named in the footer via `clubLine` in `/lib/offers.ts` and on `/privacy`.
+- **Offer mode** — free only, permanently. See Section 13.
+- **Per-IP cap** — `PER_IP_DAILY_CAP=30`.
+- **Publication intent** — a transfer-application narrative using real outcome numbers ("n=34, median X% over 90 days"). The consent small print and the retained fields already cover publishing anonymized aggregates.
+- **Consent model** — no checkboxes. Requesting the report is the consent, disclosed in small print under the button and on `/privacy`; all three consent columns store `true`. Re-runs at 30/90 days are silent and scheduled only on a business's first audit.

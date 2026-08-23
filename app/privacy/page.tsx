@@ -14,6 +14,12 @@ export default function PrivacyPage() {
         </h1>
         <div className="mt-4 space-y-4 leading-relaxed">
           <p>
+            <strong>Who we are.</strong> Pro Bono Consulting is a student club
+            at Diablo Valley College. This tool is free and always will be. We
+            are not paid by anyone, we sell nothing — not on this site and not
+            on the call — and no one pays us to rank higher.
+          </p>
+          <p>
             <strong>What we collect.</strong> The email address you give us, and
             public information about the business you audit: its Google listing
             and its public website. We never ask for passwords. We do not store

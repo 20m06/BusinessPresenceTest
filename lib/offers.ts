@@ -149,7 +149,8 @@ export function getOffers(): OfferCopy {
     serviceCostLabel: "Free",
     serviceHref: calendlyUrl,
     buttonLabel: "Book time with a student advisor",
-    clubLine: "A free service of the student club at Diablo Valley College.",
+    clubLine:
+      "A student club at Diablo Valley College. Everything we do is free.",
     calendlyUrl,
   };
 }

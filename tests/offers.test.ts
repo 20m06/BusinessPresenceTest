@@ -1,64 +1,38 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getFixOffer, getOffers, getServiceSlugs } from "../lib/offers";
 
-// §13: flipping NEXT_PUBLIC_OFFER_MODE must convert every commercial
-// surface with no code edit. Prices are the surface most likely to be
-// forgotten — a "free student club service" quoting $200 is the one
-// contradiction a transfer reader would notice.
+// The site is a free student-club service (owner decision, 2026-08-22).
+// Prices are the surface most likely to creep back in — a free service
+// quoting $200 is the one contradiction a business owner, or a transfer
+// reader, would notice immediately. These tests exist to catch that.
 
-const original = process.env.NEXT_PUBLIC_OFFER_MODE;
-afterEach(() => {
-  process.env.NEXT_PUBLIC_OFFER_MODE = original;
-});
-
-describe("offer mode", () => {
-  it("prices the services in commercial mode", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "commercial";
-    expect(getOffers().servicePrice).toBe("$200");
-  });
-
-  it("never shows a price in pro_bono mode", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
+describe("offers", () => {
+  it("never quotes a price for a service", () => {
     const offers = getOffers();
-    expect(offers.servicePrice).toBe("Free");
-    expect(offers.servicePrice).not.toMatch(/\$/);
+    expect(offers.serviceCostLabel).toBe("Free");
+    expect(offers.serviceCostLabel).not.toMatch(/\$/);
   });
 
-  it("keeps money out of the pro_bono fix bands too", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
-    for (const bucket of ["minutes", "hours", "days", "money"]) {
+  it("keeps money out of the fix bands", () => {
+    for (const bucket of ["minutes", "hours", "days", "money", null]) {
       const offer = getFixOffer(bucket, "Some check");
-      expect(offer.price, bucket).toBe("Free");
-      expect(offer.ariaLabel, bucket).not.toMatch(/\$/);
-      expect(offer.href, bucket).not.toContain("stripe");
+      expect(offer.costLabel, String(bucket)).toBe("Free");
+      expect(offer.ariaLabel, String(bucket)).not.toMatch(/\$/);
+      expect(offer.href, String(bucket)).not.toContain("stripe");
+      expect(offer.href, String(bucket)).toContain("calendly");
     }
   });
 
-  it("prices fix bands by cost bucket in commercial mode", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "commercial";
-    expect(getFixOffer("minutes", "c").price).toBe("$50");
-    expect(getFixOffer("hours", "c").price).toBe("$75");
-    expect(getFixOffer("days", "c").price).toBe("$200");
-    expect(getFixOffer("money", "c").price).toBe("$200");
-    // Unknown bucket must not silently land on the top tier.
-    expect(getFixOffer(null, "c").price).toBe("$75");
+  it("sends a service click to the booking calendar, not a checkout", () => {
+    const offers = getOffers();
+    expect(offers.serviceHref).not.toContain("stripe");
+    expect(offers.serviceHref).toContain("calendly");
   });
 
-  it("counts down only in commercial mode", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "commercial";
-    expect(getOffers().urgencyLine).toContain("24 hours");
-
-    // A countdown to a free offer, in the mode where everything is
-    // already free, would be both meaningless and coercive.
-    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
-    expect(getOffers().urgencyLine).toBeNull();
-  });
-
-  it("sends the service price somewhere appropriate to the mode", () => {
-    process.env.NEXT_PUBLIC_OFFER_MODE = "pro_bono";
-    const proBono = getOffers();
-    expect(proBono.serviceHref).not.toContain("stripe");
-    expect(proBono.serviceHref).toContain("calendly");
+  it("names the club on every page that carries the footer line", () => {
+    // Removing this line would leave a site that reads commercial while
+    // charging nothing, which is the confusing half of both framings.
+    expect(getOffers().clubLine).toContain("Diablo Valley College");
   });
 
   it("gives every service a page of its own", () => {

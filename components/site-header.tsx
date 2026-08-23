@@ -59,7 +59,7 @@ export default function SiteHeader() {
           onClick={closeMenus}
         >
           <Image
-            src="/arsenal-logo.png"
+            src="/probono-logo.png"
             alt=""
             width={244}
             height={228}

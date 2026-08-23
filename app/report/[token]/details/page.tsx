@@ -143,11 +143,12 @@ function describeRaw(row: CheckRow): string | null {
 }
 
 /**
- * Paid-fix band, shown under any check that scored below 100.
+ * Free-fix band, shown under any check that scored below 100. Offers to have
+ * a student advisor do the fix, and links to the booking calendar.
  *
  * Deliberately not shown for `unavailable` or `manual_required` checks: both
- * carry a null score, and selling a fix for something we could not measure —
- * or for a question only the owner can answer — would be selling air.
+ * carry a null score, and offering to fix something we could not measure —
+ * or a question only the owner can answer — would be offering air.
  */
 function FixBand({ row, allRows }: { row: CheckRow; allRows: CheckRow[] }) {
   if (row.normalized_score === null || row.normalized_score >= 100) return null;
@@ -170,7 +171,7 @@ function FixBand({ row, allRows }: { row: CheckRow; allRows: CheckRow[] }) {
         )}
       </span>
       <span className="font-mono text-sm font-semibold bg-offer-deep rounded-full px-3 py-1 shrink-0">
-        {offer.price}
+        {offer.costLabel}
       </span>
     </a>
   );

@@ -1,7 +1,7 @@
 // Brand identity. Single source of truth for the company name and the
 // site-wide navigation, so a rename never means hunting through components.
 
-export const BRAND_NAME = "Arsenal Consulting";
+export const BRAND_NAME = "Pro Bono Consulting";
 export const BRAND_TAGLINE =
   "We find out why customers can't find you — then we fix it.";
 

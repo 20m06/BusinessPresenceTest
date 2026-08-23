@@ -3,7 +3,6 @@
 import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import FreeFixTimer from "./free-fix-timer";
 import { getOffers } from "@/lib/offers";
 import { Receipt } from "./receipt";
 
@@ -314,13 +313,7 @@ export default function ReportPage({
               </div>
             )}
 
-            {offers.urgencyLine && <FreeFixTimer line={offers.urgencyLine} />}
-
-            {/* Tight to the banner when it's there, normal spacing when
-                it isn't (pro_bono has no countdown). */}
-            <div
-              className={`${offers.urgencyLine ? "mt-3" : "mt-8"} border border-rule bg-white p-5`}
-            >
+            <div className="mt-8 border border-rule bg-white p-5">
               <p className="font-medium">
                 {payload.topFixes.length > 0 ? offers.headline : offers.perfectHeadline}
               </p>
@@ -336,12 +329,12 @@ export default function ReportPage({
                         href={offers.serviceHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={`${offers.servicePrice} — ${s.name}`}
+                        aria-label={`${offers.serviceCostLabel} — ${s.name}`}
                         /* Negative margin keeps the layout while giving the
                            link a thumb-sized hit area on a phone. */
                         className="font-mono text-sm font-semibold text-offer-deep shrink-0 underline underline-offset-4 hover:text-offer py-3 -my-3 pl-3 -mr-1"
                       >
-                        {offers.servicePrice}
+                        {offers.serviceCostLabel}
                       </a>
                     </div>
                     <p className="text-sm text-muted">{s.description}</p>

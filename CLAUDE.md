@@ -49,7 +49,7 @@ That claim is only possible if **every audit is stored as an immutable, timestam
 - Owner has **zero coding experience**. Every phase must end in something runnable, with plain-language instructions for what to click and where. Explain *what* a command does before giving it.
 - Solo project. No collaborators, no team conventions needed.
 - Budget ceiling: **$50/month, hard.**
-- Must be plausibly a scalable startup (class requirement) *and* convertible to a free pro-bono club service later (transfer application narrative). See Section 13 — one env var flips the entire commercial layer off.
+- A free pro-bono service of a student club at Diablo Valley College. There is no commercial layer and no pricing anywhere on the site (see Section 13).
 
 ---
 
@@ -113,8 +113,7 @@ EMAIL_ENABLED=true
 # Booking
 NEXT_PUBLIC_CALENDLY_URL=
 
-# Mode: "commercial" (paid upsells) or "pro_bono" (free club framing)
-NEXT_PUBLIC_OFFER_MODE=commercial
+# (NEXT_PUBLIC_OFFER_MODE is gone — the site is free-only. See Section 13.)
 
 # Cost + abuse control
 DAILY_AUDIT_CAP=50
@@ -130,8 +129,8 @@ CRON_SECRET=
 ADMIN_TOKEN=
 
 # Public
-NEXT_PUBLIC_SITE_URL=https://businessvisibilitytest.vercel.app
-NEXT_PUBLIC_SITE_NAME="Business Visibility Test"
+NEXT_PUBLIC_SITE_URL=https://probonoconsulting.vercel.app
+NEXT_PUBLIC_SITE_NAME="Pro Bono Consulting"
 ```
 
 `PER_IP_DAILY_CAP` is set to 10 rather than unlimited. The owner asked for no per-IP limit, but a single script could consume the entire daily budget in under a minute. Setting it to `50` disables it effectively. Explain this tradeoff and let the owner decide.
@@ -579,36 +578,29 @@ Also: cache Place Details results for 24h keyed by `place_id`, so a re-search of
 
 ---
 
-## 13. Offer mode — commercial vs pro bono
+## 13. Offers — free student-club service
 
-`NEXT_PUBLIC_OFFER_MODE` flips every commercial surface. All copy lives in one file, `/lib/offers.ts`. **No CTA text hardcoded in components.**
+**Owner decision, 2026-08-22.** The site is a free service of a student club at Diablo Valley College. There is no commercial mode, no price anywhere, and no `NEXT_PUBLIC_OFFER_MODE` env var — the switch and the price table were deleted, not defaulted off, so a stray env var in Vercel cannot put a dollar figure back in front of an owner. This supersedes both the earlier "commercial vs pro bono" dual mode and the 2026-08-11 per-fix pricing decision.
 
-### commercial (class project)
+All copy lives in one file, `/lib/offers.ts`. **No CTA text hardcoded in components.**
 
-Report CTA block, headline *"Want these fixed for you?"*:
+Report CTA block, headline *"We'll help you fix these — free."*:
 
+- **Done-for-you fixes** — implementation of the top three.
 - **Review reply drafter** — drafted responses to every review, in the business's voice.
 - **AI phone agent** — answers calls when nobody can reach the phone, takes orders and bookings.
+- **Website chat widget** — answers questions on the site and passes real leads through.
 - **Competitor benchmark** — how the business ranks against similar businesses in the same ZIP.
-- **Done-for-you fixes** — implementation of the top three.
 
-Single button: *"Book a free 20-minute review"* → Calendly. The CTA block itself carries **no prices** — those four services are scoped on a call, not bought off a page.
+Each carries a *"Free"* label linking to Calendly. Single button: *"Book time with a student advisor"* → Calendly. A footer line names the club and the college.
 
-**Per-fix pricing on report page two** (owner decision, 2026-08-11 — this reverses the earlier "no prices anywhere on the site" rule). Every check scoring below 100 gets a blue band beneath it reading *"Fix it now in 5 minutes!"* with a price pill on the right. Price is derived from the check's own `fixCostBucket` — `minutes` → $50, `hours` → $75, `days` and `money` → $200 — so a check added to `config.ts` is priced automatically and its price can never disagree with the effort estimate shown on page one. Copy and tiers live in `/lib/offers.ts` (`getFixOffer`), never in the component.
+**Free-fix band on report page two.** Every check scoring below 100 gets a band beneath it reading *"Fix it now in 5 minutes!"* with a *"Free"* pill on the right that links to Calendly. Copy lives in `/lib/offers.ts` (`getFixOffer`), never in the component.
 
-Bands are shown only for checks with a real score. `unavailable` and `manual_required` checks carry a null score and get no band: selling a fix for something we could not measure, or for a question only the owner can answer, would be selling air.
+Bands are shown only for checks with a real score. `unavailable` and `manual_required` checks carry a null score and get no band: offering to fix something we could not measure, or a question only the owner can answer, would be offering air.
 
-In `pro_bono` mode the pill reads *"Free"* and links to Calendly instead. A free student-club service quoting $200 would contradict the whole framing, so the price must never survive the mode flip.
+Peer benchmarking is still excluded from the free automated report — not because it is a paid deliverable, but because it costs an extra Nearby Search per audit against a $50/month ceiling. It is delivered by an advisor on the call instead.
 
-> **Demo caveat — revisit before real traffic.** The band currently links to `https://dashboard.stripe.com/login`, which is the *merchant* sign-in, not a customer checkout. It exists to make the flow look connected in a pitch. A real owner clicking a $75 pill lands on a Stripe login for an account they do not have. Before the site is put in front of actual businesses, this must become either a real Checkout session or the Calendly link.
-
-Peer benchmarking is deliberately excluded from the free report and positioned as a paid deliverable. This also conveniently avoids the extra Nearby Search cost per audit.
-
-### pro_bono (club)
-
-Same block, headline *"We'll help you fix these — free."* Same four items, framed as free student-club services. Same Calendly button, relabeled *"Book time with a student advisor."* Add a line naming the club and the college.
-
-Flipping one env var in Vercel must fully convert the site. Verify this works before Phase 8 is called done.
+> **Still outstanding — fabricated point gains.** `DEMO_FIXED_GAINS` in `/lib/offers.ts` is `true`, so each band shows a flat made-up gain per effort bucket rather than the honest number `scoreGainForCheck()` already computes. This contradicts rule 7 and must be flipped to `false` before the outcome write-up.
 
 ---
 
@@ -686,7 +678,7 @@ Work one phase at a time. End every phase with something the owner can see runni
 - [ ] Daily cap blocks audit 51 and shows the Calendly fallback
 - [ ] Kill switch stops all paid calls
 - [ ] Report email received in a real inbox
-- [ ] `OFFER_MODE` flip changes every CTA with no code edit
+- [ ] No price appears anywhere on the site — CTA block, fix bands, or marketing pages
 - [ ] Re-run creates a new audit row; original is byte-identical
 - [ ] No secret appears in any client bundle (verify: search the built output)
 - [ ] `scoring_config_version` present on every audit row

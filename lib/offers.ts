@@ -1,10 +1,17 @@
 // All CTA copy lives here — no CTA text hardcoded in components
-// (CLAUDE.md §13). NEXT_PUBLIC_OFFER_MODE flips commercial ↔ pro_bono.
+// (CLAUDE.md §13).
+//
+// Owner decision, 2026-08-22: the site is a free service of a student club
+// at Diablo Valley College. There is no commercial mode and no price
+// anywhere — not on the marketing pages, not on the report, not on the
+// per-check fix bands. The old NEXT_PUBLIC_OFFER_MODE switch and the price
+// table are deleted rather than merely defaulted off, so a stray env var in
+// Vercel can never put a dollar figure back in front of an owner.
 //
 // The same SERVICES array feeds both the report CTA block and the public
-// /services pages, so the two can never drift apart. Service bodies are
-// written mode-neutrally ("we"); everything that frames them as paid or
-// free — headline, lead, button label, club line — flips below.
+// /services pages, so the two can never drift apart.
+
+import { BRAND_NAME } from "./brand";
 
 export interface OfferService {
   slug: string;
@@ -40,15 +47,10 @@ export interface OfferCopy {
   serviceCtaLine: string;
   founder: OfferFounder;
   services: OfferService[];
-  /** Shown beside every service in the report CTA block. "Free" in pro_bono. */
-  servicePrice: string;
-  /** Where a service price goes when clicked. */
+  /** Shown beside every service in the report CTA block. Always "Free". */
+  serviceCostLabel: string;
+  /** Where that label goes when clicked — the booking link, never a checkout. */
   serviceHref: string;
-  /**
-   * Countdown line above the CTA block, or null when the mode has nothing
-   * to count down to. Demo-only urgency — see free-fix-timer.tsx.
-   */
-  urgencyLine: string | null;
   buttonLabel: string;
   clubLine: string | null;
   calendlyUrl: string;
@@ -118,100 +120,49 @@ const SERVICES: OfferService[] = [
 ];
 
 export function getOffers(): OfferCopy {
-  const mode = process.env.NEXT_PUBLIC_OFFER_MODE ?? "commercial";
   const calendlyUrl =
     process.env.NEXT_PUBLIC_CALENDLY_URL ??
     "https://calendly.com/michaelkosenko456/30min";
 
-  if (mode === "pro_bono") {
-    return {
-      headline: "We'll help you fix these — free.",
-      lead: "Some improvements are bigger than a checklist. Our student advisors set these up with you:",
-      perfectHeadline: "Everything we check looks great.",
-      perfectLead:
-        "If you want to go further, we can set up automations that take work off your plate:",
-      servicesHeadline: "What our student advisors can do for you",
-      servicesLead:
-        "Everything below is free. Start with the visibility score — it tells us where to begin.",
-      serviceCtaLine:
-        "Not sure if this is what your business needs? Book a free session and we will look at your score together.",
-      founder: {
-        name: "Michael Kosenko",
-        role: "Founder, Arsenal Consulting",
-        photo: "/michael.png",
-        pitch: [
-          "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I built this tool. A student advisor reads every report it produces, including yours.",
-          "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes actually matter for a business like yours, and you leave with a short plan you can do yourself.",
-          "It is free, and it stays free. Bring your questions about anything on the report.",
-        ],
-      },
-      services: SERVICES,
-      servicePrice: "Free",
-      serviceHref: calendlyUrl,
-      // Everything here is already free; a countdown to free would be
-      // nonsense, and pressuring owners is the opposite of the framing.
-      urgencyLine: null,
-      buttonLabel: "Book time with a student advisor",
-      clubLine: "A free service of the student club at Diablo Valley College.",
-      calendlyUrl,
-    };
-  }
-
   return {
-    headline: "Want these fixed for you?",
-    lead: "Some improvements are bigger than a checklist. We set these up for businesses like yours:",
+    headline: "We'll help you fix these — free.",
+    lead: "Some improvements are bigger than a checklist. Our student advisors set these up with you:",
     perfectHeadline: "Everything we check looks great.",
     perfectLead:
-      "If you want to go further, automations can take work off your plate:",
-    servicesHeadline: "What we do",
+      "If you want to go further, we can set up automations that take work off your plate:",
+    servicesHeadline: "What our student advisors can do for you",
     servicesLead:
-      "Start with the free visibility score. It tells us — and you — where the real problems are before anyone spends money.",
+      "Everything below is free. Start with the visibility score — it tells us where to begin.",
     serviceCtaLine:
-      "Not sure if this is what your business needs? Book a free 20-minute coffee chat and we will look at your score together.",
+      "Not sure if this is what your business needs? Book a free session and we will look at your score together.",
     founder: {
       name: "Michael Kosenko",
-      role: "Founder, Arsenal Consulting",
+      role: `Founder, ${BRAND_NAME}`,
       photo: "/michael.png",
       pitch: [
-        "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I interned at the Dublin Chamber of Commerce. I built this tool, and I read every report that comes out of it, including yours.",
-        "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes are worth paying anyone to do and which ones you should just do yourself, and you leave with a plan either way.",
-        "No slides, no pressure. If the answer is that you do not need us, I will say so.",
+        "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I built this tool. A student advisor reads every report it produces, including yours.",
+        "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes actually matter for a business like yours, and you leave with a short plan you can do yourself.",
+        "It is free, and it stays free. Bring your questions about anything on the report.",
       ],
     },
     services: SERVICES,
-    servicePrice: "$200",
-    serviceHref: "https://dashboard.stripe.com/login",
-    urgencyLine: "First quick fix is free during the next 24 hours!",
-    buttonLabel: "Book a free 20-minute coffee chat",
-    clubLine: null,
+    serviceCostLabel: "Free",
+    serviceHref: calendlyUrl,
+    buttonLabel: "Book time with a student advisor",
+    clubLine: "A free service of the student club at Diablo Valley College.",
     calendlyUrl,
   };
 }
 
 // ---------------------------------------------------------------------------
-// Paid-fix band on report page two (owner decision, 2026-08-11). This is a
-// deliberate reversal of the original "no prices anywhere" rule in §13:
-// prices now appear per failing check, while the report CTA block stays
-// price-free and still routes to a conversation.
+// Free-fix band on report page two.
 //
-// Price comes from the check's own fixCostBucket rather than a per-check
-// table, so a new check in config.ts is priced the moment it is added and
-// the price can never disagree with the effort estimate shown next to it.
+// Every check scoring below 100 gets a band offering to have a student
+// advisor do the fix. It carries no price — the club does this for free —
+// and it links to the booking calendar, never to a checkout.
 // ---------------------------------------------------------------------------
 
-export type FixPriceBucket = "minutes" | "hours" | "days" | "money";
-
-const FIX_PRICE_USD: Record<FixPriceBucket, number> = {
-  minutes: 50,
-  hours: 75,
-  days: 200,
-  // A fix whose blocker is money rather than time — a site rebuild — is the
-  // top tier, not a cheap one, even though it takes us no longer than 'days'.
-  money: 200,
-};
-
-/** Bucket missing or unrecognised: charge the middle tier, never the top. */
-const FIX_PRICE_FALLBACK_USD = 75;
+export type FixCostBucket = "minutes" | "hours" | "days" | "money";
 
 // ---------------------------------------------------------------------------
 // DEMO ONLY — fabricated point gains. Owner's call, 2026-08-11, for a class
@@ -221,20 +172,20 @@ const FIX_PRICE_FALLBACK_USD = 75;
 // scoreGainForCheck() in scoring/score-gain.ts, tested against a from-scratch
 // recomposition of the overall score, and still wired up behind this flag.
 // The real numbers on the current fixture range from 0.1 to 6.7 points, so a
-// flat "4 pts" beside a $200 button is both an overstatement on the cheap
-// checks and an understatement on the valuable ones.
+// flat gain per effort bucket both overstates the cheap checks and
+// understates the valuable ones.
 //
 // This contradicts rule 7 (never invent data) and rule 3 (honest confidence
 // labels), which is survivable in a pitch and not survivable in front of a
-// paying owner or in the write-up. Flip it back before either.
+// real owner or in the write-up. Flip it back before either.
 // ---------------------------------------------------------------------------
 const DEMO_FIXED_GAINS = true;
 
-const DEMO_GAIN_BY_BUCKET: Record<FixPriceBucket, string> = {
-  minutes: "1 pt", // $50
-  hours: "2 pts", // $75
-  days: "4 pts", // $200
-  money: "4 pts", // $200
+const DEMO_GAIN_BY_BUCKET: Record<FixCostBucket, string> = {
+  minutes: "1 pt",
+  hours: "2 pts",
+  days: "4 pts",
+  money: "4 pts",
 };
 
 const DEMO_GAIN_FALLBACK = "2 pts";
@@ -242,8 +193,8 @@ const DEMO_GAIN_FALLBACK = "2 pts";
 export interface FixOffer {
   /** Band copy. */
   label: string;
-  /** "$50" in commercial mode, "Free" in pro_bono. */
-  price: string;
+  /** Always "Free". There is no paid tier. */
+  costLabel: string;
   href: string;
   /** "Adds 2.4 pts to your score", or null when the gain is unknown. */
   gainNote: string | null;
@@ -257,38 +208,21 @@ export function getFixOffer(
   checkLabel: string,
   gain?: string | null
 ): FixOffer {
-  const mode = process.env.NEXT_PUBLIC_OFFER_MODE ?? "commercial";
-  const amount =
-    bucket && bucket in FIX_PRICE_USD
-      ? FIX_PRICE_USD[bucket as FixPriceBucket]
-      : FIX_PRICE_FALLBACK_USD;
-
   const shownGain = DEMO_FIXED_GAINS
     ? bucket && bucket in DEMO_GAIN_BY_BUCKET
-      ? DEMO_GAIN_BY_BUCKET[bucket as FixPriceBucket]
+      ? DEMO_GAIN_BY_BUCKET[bucket as FixCostBucket]
       : DEMO_GAIN_FALLBACK
     : gain;
   const gainNote = shownGain ? `Adds ${shownGain} to your score` : null;
 
-  if (mode === "pro_bono") {
-    return {
-      label: "Fix it now in 5 minutes!",
-      price: "Free",
-      href: process.env.NEXT_PUBLIC_CALENDLY_URL ??
-        "https://calendly.com/michaelkosenko456/30min",
-      gainNote,
-      ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free${
-        shownGain ? `. Adds ${shownGain} to your score` : ""
-      }`,
-    };
-  }
-
   return {
     label: "Fix it now in 5 minutes!",
-    price: `$${amount}`,
-    href: "https://dashboard.stripe.com/login",
+    costLabel: "Free",
+    href:
+      process.env.NEXT_PUBLIC_CALENDLY_URL ??
+      "https://calendly.com/michaelkosenko456/30min",
     gainNote,
-    ariaLabel: `Pay $${amount} to have us fix "${checkLabel}" for you${
+    ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free${
       shownGain ? `. Adds ${shownGain} to your score` : ""
     }`,
   };

@@ -1,6 +1,6 @@
-# CLAUDE.md — Pro Bono Consulting: Small Business Web Presence Scorecard
+# CLAUDE.md — Main Street Project: Small Business Web Presence Scorecard
 
-> **What this project is.** Free audit software for **Pro Bono Consulting**, a student club at Diablo Valley College. It is not a startup, not a product, and not a business. Nothing is sold, nothing is charged, and there is no commercial layer to build or restore. Any earlier framing of this project as a for-profit venture is void — see Section 13.
+> **What this project is.** Free audit software for **Main Street Project**, a student club at Diablo Valley College. It is not a startup, not a product, and not a business. Nothing is sold, nothing is charged, and there is no commercial layer to build or restore. Any earlier framing of this project as a for-profit venture is void — see Section 13.
 
 > **How to use this file:** Save it as `CLAUDE.md` in the root of an empty folder. Open Claude Code in that folder. Claude Code reads this file automatically on every session. Then work through the build phases in Section 15, one prompt at a time. Do not paste the whole file as a prompt — it lives on disk and gets read automatically.
 
@@ -33,7 +33,7 @@
 
 A web tool that scores a local small business's online presence and returns a prioritized, one-page action report.
 
-It is run free of charge by Pro Bono Consulting, a student club at Diablo Valley College. Owners are never charged and never asked to buy anything.
+It is run free of charge by Main Street Project, a student club at Diablo Valley College. Owners are never charged and never asked to buy anything.
 
 **Two audiences, one system:**
 
@@ -134,7 +134,7 @@ ADMIN_TOKEN=
 
 # Public
 NEXT_PUBLIC_SITE_URL=https://probonoconsulting.vercel.app
-NEXT_PUBLIC_SITE_NAME="Pro Bono Consulting"
+NEXT_PUBLIC_SITE_NAME="Main Street Project"
 ```
 
 `PER_IP_DAILY_CAP` is set to 10 rather than unlimited. The owner asked for no per-IP limit, but a single script could consume the entire daily budget in under a minute. Setting it to `50` disables it effectively. Explain this tradeoff and let the owner decide.
@@ -713,7 +713,7 @@ Ask these when the relevant phase arrives — do not block Phase 1 on them.
 
 ### Already answered — do not re-ask
 
-- **Club name and college** — Pro Bono Consulting, a student club at Diablo Valley College. Named in the footer via `clubLine` in `/lib/offers.ts` and on `/privacy`.
+- **Club name and college** — Main Street Project, a student club at Diablo Valley College. Named in the footer via `clubLine` in `/lib/offers.ts` and on `/privacy`.
 - **Offer mode** — free only, permanently. See Section 13.
 - **Per-IP cap** — `PER_IP_DAILY_CAP=30`.
 - **Publication intent** — a transfer-application narrative using real outcome numbers ("n=34, median X% over 90 days"). The consent small print and the retained fields already cover publishing anonymized aggregates.

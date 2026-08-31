@@ -1,6 +1,6 @@
-# Pro Bono Consulting — Web Presence Scorecard
+# Main Street Project — Web Presence Scorecard
 
-Free audit software for **Pro Bono Consulting**, a student club at Diablo
+Free audit software for **Main Street Project**, a student club at Diablo
 Valley College. It scores a local small business's online presence and returns
 a prioritized, one-page action report.
 

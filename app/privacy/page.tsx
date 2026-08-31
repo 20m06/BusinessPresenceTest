@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         </h1>
         <div className="mt-4 space-y-4 leading-relaxed">
           <p>
-            <strong>Who we are.</strong> Pro Bono Consulting is a student club
+            <strong>Who we are.</strong> Main Street Project is a student club
             at Diablo Valley College. This tool is free and always will be. We
             are not paid by anyone, we sell nothing — not on this site and not
             on the call — and no one pays us to rank higher.

@@ -2,8 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { getFixOffer } from "@/lib/offers";
-import { formatGain, scoreGainForCheck } from "@/lib/scoring/score-gain";
 
 // Report page two (CLAUDE.md §9.2): every check grouped by dimension,
 // with status, confidence badge, and raw value. Inferred checks visibly
@@ -142,41 +140,6 @@ function describeRaw(row: CheckRow): string | null {
   }
 }
 
-/**
- * Free-fix band, shown under any check that scored below 100. Offers to have
- * a student advisor do the fix, and links to the booking calendar.
- *
- * Deliberately not shown for `unavailable` or `manual_required` checks: both
- * carry a null score, and offering to fix something we could not measure —
- * or a question only the owner can answer — would be offering air.
- */
-function FixBand({ row, allRows }: { row: CheckRow; allRows: CheckRow[] }) {
-  if (row.normalized_score === null || row.normalized_score >= 100) return null;
-
-  const gain = scoreGainForCheck(allRows, row.check_key);
-  const offer = getFixOffer(row.fix_cost_bucket, row.label, gain ? formatGain(gain) : null);
-
-  return (
-    <a
-      href={offer.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={offer.ariaLabel}
-      className="group flex items-center justify-between gap-3 bg-offer px-4 py-2.5 text-white hover:brightness-95 transition-[filter]"
-    >
-      <span className="min-w-0">
-        <span className="block text-sm font-medium">{offer.label}</span>
-        {offer.gainNote && (
-          <span className="block font-mono text-xs text-white/80">{offer.gainNote}</span>
-        )}
-      </span>
-      <span className="font-mono text-sm font-semibold bg-offer-deep rounded-full px-3 py-1 shrink-0">
-        {offer.costLabel}
-      </span>
-    </a>
-  );
-}
-
 export default function DetailsPage({
   params,
 }: {
@@ -271,7 +234,6 @@ export default function DetailsPage({
                               <p className="mt-1 font-mono text-xs text-muted">{desc}</p>
                             )}
                           </div>
-                          <FixBand row={row} allRows={payload.checks} />
                         </li>
                       );
                     })}

@@ -1,6 +1,6 @@
-# CLAUDE.md — Main Street Project: Small Business Web Presence Scorecard
+# CLAUDE.md — The Storefront Index at DVC: Small Business Web Presence Scorecard
 
-> **What this project is.** Free audit software for **Main Street Project**, a student club at Diablo Valley College. It is not a startup, not a product, and not a business. Nothing is sold, nothing is charged, and there is no commercial layer to build or restore. Any earlier framing of this project as a for-profit venture is void — see Section 13.
+> **What this project is.** The audit instrument **The Storefront Index at DVC** runs its research on. The club is a student organization at Diablo Valley College; this is not a startup, not a product, and not a business. Nothing is sold, nothing is charged, and there is no commercial layer to build or restore. Any earlier framing of this project as a for-profit venture is void — see Section 13.
 
 > **How to use this file:** Save it as `CLAUDE.md` in the root of an empty folder. Open Claude Code in that folder. Claude Code reads this file automatically on every session. Then work through the build phases in Section 15, one prompt at a time. Do not paste the whole file as a prompt — it lives on disk and gets read automatically.
 
@@ -24,8 +24,7 @@
 3. **Vercel** — free Hobby account, connected to a GitHub account.
 4. **GitHub** — a private repo for the code.
 5. **Resend** — free tier. Verify a domain if you have one.
-6. **Calendly** — free tier. Create one event type: *"Free 20-minute digital audit review"*, 20 min, at least 3 slots/week.
-7. **Domain (recommended)** — any registrar. Point it at Vercel and verify it in Resend.
+6. **Domain (recommended)** — any registrar. Point it at Vercel and verify it in Resend.
 
 ---
 
@@ -33,7 +32,7 @@
 
 A web tool that scores a local small business's online presence and returns a prioritized, one-page action report.
 
-It is run free of charge by Main Street Project, a student club at Diablo Valley College. Owners are never charged and never asked to buy anything.
+It is run free of charge by The Storefront Index at DVC, a student club at Diablo Valley College. Businesses are never charged and never asked to buy anything, and the club recommends no vendor.
 
 **Two audiences, one system:**
 
@@ -110,12 +109,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 # Email
 RESEND_API_KEY=
-EMAIL_FROM="Digital Audit <reports@yourdomain.com>"
+EMAIL_FROM="The Storefront Index at DVC <reports@yourdomain.com>"
 EMAIL_REPLY_TO=
 EMAIL_ENABLED=true
-
-# Booking
-NEXT_PUBLIC_CALENDLY_URL=
 
 # (NEXT_PUBLIC_OFFER_MODE is gone — the site is free-only. See Section 13.)
 
@@ -133,8 +129,8 @@ CRON_SECRET=
 ADMIN_TOKEN=
 
 # Public
-NEXT_PUBLIC_SITE_URL=https://probonoconsulting.vercel.app
-NEXT_PUBLIC_SITE_NAME="Main Street Project"
+NEXT_PUBLIC_SITE_URL=https://thestorefrontindex.vercel.app
+NEXT_PUBLIC_SITE_NAME="The Storefront Index at DVC"
 ```
 
 `PER_IP_DAILY_CAP` is set to 10 rather than unlimited. The owner asked for no per-IP limit, but a single script could consume the entire daily budget in under a minute. Setting it to `50` disables it effectively. Explain this tradeoff and let the owner decide.
@@ -574,7 +570,7 @@ Before **any** paid API call, in this order:
 2. Today's `usage_counters.audits_started < DAILY_AUDIT_CAP`.
 3. This IP hash's `ip_counters.count < PER_IP_DAILY_CAP`.
 
-Increment counters in the same transaction that creates the audit. When the daily cap is hit, show: *"We've hit today's audit limit. Check back tomorrow, or book a call and we'll run yours manually."* — with the Calendly link. A cap hit becomes a lead.
+Increment counters in the same transaction that creates the audit. When the daily cap is hit, say so plainly: *"We cap how many checks run each day so the club stays inside its budget. Try again tomorrow."* There is nothing to offer in its place — a cap hit is not a lead.
 
 Also: cache Place Details results for 24h keyed by `place_id`, so a re-search of the same business inside a day costs nothing extra.
 
@@ -582,29 +578,42 @@ Also: cache Place Details results for 24h keyed by `place_id`, so a re-search of
 
 ---
 
-## 13. Offers — free student-club service
+## 13. No commercial surface
 
-**Owner decision, 2026-08-22.** The site is a free service of a student club at Diablo Valley College. There is no commercial mode, no price anywhere, and no `NEXT_PUBLIC_OFFER_MODE` env var — the switch and the price table were deleted, not defaulted off, so a stray env var in Vercel cannot put a dollar figure back in front of an owner. This supersedes both the earlier "commercial vs pro bono" dual mode and the 2026-08-11 per-fix pricing decision.
+**Rebrand, 2026-09-12.** The site is the public face of The Storefront Index at
+DVC. The club's constitution, filed with DVC Student Life, states in Article II
+that the club "does not provide services, advice, or recommendations to any
+business, and charges no fees." The site has to be able to stand next to that
+document.
 
-All copy lives in one file, `/lib/offers.ts`. **No CTA text hardcoded in components.**
+So the commercial surface is **gone**, not reworded:
 
-Report CTA block, headline *"We'll help you fix these — free."*:
+- The five services (done-for-you fixes, review reply drafter, AI phone agent,
+  website chat widget, competitor benchmark), `/services`, and `/services/[slug]`
+  — deleted.
+- The founder photo and pitch block on the report — deleted.
+- The Calendly booking link, the "Book time with a student advisor" button, and
+  the per-check *"Fix it now in 5 minutes / Free"* bands — deleted, along with
+  `NEXT_PUBLIC_CALENDLY_URL`.
+- `DEMO_FIXED_GAINS`, the fabricated per-bucket point gains, went with the fix
+  bands that displayed them.
 
-- **Done-for-you fixes** — implementation of the top three.
-- **Review reply drafter** — drafted responses to every review, in the business's voice.
-- **AI phone agent** — answers calls when nobody can reach the phone, takes orders and bookings.
-- **Website chat widget** — answers questions on the site and passes real leads through.
-- **Competitor benchmark** — how the business ranks against similar businesses in the same ZIP.
+This supersedes the 2026-08-22 "free student-club service" framing, which kept a
+service menu and priced it at zero. Free was never the problem; offering to do
+work for a business was.
 
-Each carries a *"Free"* label linking to Calendly. Single button: *"Book time with a student advisor"* → Calendly. A footer line names the club and the college.
+**What remains.** One contact address, `storefrontindexdvc@gmail.com`, in
+`/lib/offers.ts`. A business that wants its own results can ask for them —
+nothing is offered to a business that has not asked (hard rule 4). All copy still
+lives in that one file; no CTA text is hardcoded in a component.
 
-**Free-fix band on report page two.** Every check scoring below 100 gets a band beneath it reading *"Fix it now in 5 minutes!"* with a *"Free"* pill on the right that links to Calendly. Copy lives in `/lib/offers.ts` (`getFixOffer`), never in the component.
+The report's closing block now explains where the report came from — the club,
+the semester publication, the government audience — and gives the email. It does
+not propose a next step for the business.
 
-Bands are shown only for checks with a real score. `unavailable` and `manual_required` checks carry a null score and get no band: offering to fix something we could not measure, or a question only the owner can answer, would be offering air.
-
-Peer benchmarking is still excluded from the free automated report — not because it is a paid deliverable, but because it costs an extra Nearby Search per audit against a $50/month ceiling. It is delivered by an advisor on the call instead.
-
-> **Still outstanding — fabricated point gains.** `DEMO_FIXED_GAINS` in `/lib/offers.ts` is `true`, so each band shows a flat made-up gain per effort bucket rather than the honest number `scoreGainForCheck()` already computes. This contradicts rule 7 and must be flipped to `false` before the outcome write-up.
+`tests/offers.test.ts` guards this: no price, no booking language, no
+"we implement / we fix / done-for-you" construction in any copy field, and the
+contact address must be the club's rather than a personal one.
 
 ---
 
@@ -621,6 +630,7 @@ The owner asked for white, with search as the first thing on the page. Honor tha
 --ink:     #14161A   primary text
 --muted:   #5A6068   secondary text
 --rule:    #E3E2DE   hairlines, borders
+--navy:    #1B2A41   club mark; reserved for brand, not status
 --pass:    #1F7A5C
 --warn:    #B8730A
 --fail:    #B23A2E
@@ -679,7 +689,7 @@ Work one phase at a time. End every phase with something the owner can see runni
 - [ ] The AI callout never appears in the three headline fixes, even when it is the worst-scoring check
 - [ ] `audits.raw_llm` holds both prompts and both full answers
 - [ ] Report readable at 360px width
-- [ ] Daily cap blocks audit 51 and shows the Calendly fallback
+- [ ] Daily cap blocks audit 51 and shows the plain try-tomorrow message
 - [ ] Kill switch stops all paid calls
 - [ ] Report email received in a real inbox
 - [ ] No price appears anywhere on the site — CTA block, fix bands, or marketing pages
@@ -713,7 +723,7 @@ Ask these when the relevant phase arrives — do not block Phase 1 on them.
 
 ### Already answered — do not re-ask
 
-- **Club name and college** — Main Street Project, a student club at Diablo Valley College. Named in the footer via `clubLine` in `/lib/offers.ts` and on `/privacy`.
+- **Club name and college** — The Storefront Index at DVC, a student club at Diablo Valley College. Named in the footer via `clubLine` in `/lib/offers.ts` and on `/privacy`.
 - **Offer mode** — free only, permanently. See Section 13.
 - **Per-IP cap** — `PER_IP_DAILY_CAP=30`.
 - **Publication intent** — a transfer-application narrative using real outcome numbers ("n=34, median X% over 90 days"). The consent small print and the retained fields already cover publishing anonymized aggregates.

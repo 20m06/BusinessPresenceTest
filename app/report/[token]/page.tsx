@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { getOffers } from "@/lib/offers";
 import { Receipt } from "./receipt";
@@ -314,65 +313,23 @@ export default function ReportPage({
             )}
 
             <div className="mt-8 border border-rule bg-white p-5">
-              <p className="font-medium">
-                {payload.topFixes.length > 0 ? offers.headline : offers.perfectHeadline}
+              <p className="font-medium">{offers.headline}</p>
+              <p className="mt-1 text-sm text-muted leading-relaxed">
+                {offers.lead}
               </p>
-              <p className="mt-1 text-sm text-muted">
-                {payload.topFixes.length > 0 ? offers.lead : offers.perfectLead}
+              <p className="mt-4 text-sm text-muted leading-relaxed">
+                {offers.contactLine}
               </p>
-              <ul className="mt-4 space-y-3">
-                {offers.services.map((s) => (
-                  <li key={s.name}>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="text-sm font-medium">{s.name}</p>
-                      <a
-                        href={offers.serviceHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`${offers.serviceCostLabel} — ${s.name}`}
-                        /* Negative margin keeps the layout while giving the
-                           link a thumb-sized hit area on a phone. */
-                        className="font-mono text-sm font-semibold text-offer-deep shrink-0 underline underline-offset-4 hover:text-offer py-3 -my-3 pl-3 -mr-1"
-                      >
-                        {offers.serviceCostLabel}
-                      </a>
-                    </div>
-                    <p className="text-sm text-muted">{s.description}</p>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6 pt-5 border-t border-rule flex gap-4">
-                <Image
-                  src={offers.founder.photo}
-                  alt={offers.founder.name}
-                  width={864}
-                  height={1184}
-                  sizes="72px"
-                  className="w-[72px] h-[96px] object-cover border border-rule shrink-0"
-                />
-                <div>
-                  <p className="text-sm font-medium">{offers.founder.name}</p>
-                  <p className="font-mono text-xs uppercase tracking-wider text-muted">
-                    {offers.founder.role}
-                  </p>
-                  <div className="mt-2 space-y-2">
-                    {offers.founder.pitch.map((line, i) => (
-                      <p key={i} className="text-sm text-muted leading-relaxed">
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
               <a
-                href={offers.calendlyUrl}
-                className="mt-5 inline-block px-6 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
+                href={`mailto:${offers.contactEmail}`}
+                className="mt-3 inline-block font-mono text-sm underline underline-offset-4 hover:text-ink break-all"
               >
-                {offers.buttonLabel}
+                {offers.contactEmail}
               </a>
               {offers.clubLine && (
-                <p className="mt-3 font-mono text-xs text-muted">{offers.clubLine}</p>
+                <p className="mt-4 font-mono text-xs text-muted">
+                  {offers.clubLine}
+                </p>
               )}
             </div>
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import BookingCta from "@/components/booking-cta";
+import ContactCta from "@/components/contact-cta";
 import { ARTICLES, formatArticleDate, getArticle } from "@/lib/insights";
 
 export function generateStaticParams() {
@@ -106,7 +106,7 @@ export default async function ArticlePage({
           })}
         </div>
 
-        <BookingCta line="Want to know how your own business scores on all of this? The check is free and takes about a minute." />
+        <ContactCta line="Want to see how a business scores on all of this? The check is free and takes about a minute — or email the club with a question." />
 
         <div className="mt-12 pt-8 border-t border-rule">
           <p className="font-mono text-xs uppercase tracking-wider text-muted">

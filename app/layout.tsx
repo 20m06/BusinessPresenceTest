@@ -4,7 +4,7 @@ import "./globals.css";
 
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
-import { BRAND_NAME } from "@/lib/brand";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     default: BRAND_NAME,
     template: `%s — ${BRAND_NAME}`,
   },
-  description:
-    "Check how easy your business is to find online. Get a score and a short list of what to fix first.",
+  description: `${BRAND_TAGLINE} A student club at Diablo Valley College studying search visibility, listing accuracy, and website function across the Bay Area — using public information only.`,
+  icons: { icon: "/icon.png" },
 };
 
 export default function RootLayout({

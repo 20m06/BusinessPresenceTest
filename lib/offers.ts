@@ -1,238 +1,43 @@
-// All CTA copy lives here — no CTA text hardcoded in components
-// (CLAUDE.md §13).
+// All CTA and club copy lives here — no CTA text hardcoded in components.
 //
-// Owner decision, 2026-08-22: the site is a free service of a student club
-// at Diablo Valley College. There is no commercial mode and no price
-// anywhere — not on the marketing pages, not on the report, not on the
-// per-check fix bands. The old NEXT_PUBLIC_OFFER_MODE switch and the price
-// table are deleted rather than merely defaulted off, so a stray env var in
-// Vercel can never put a dollar figure back in front of an owner.
+// Rebrand, 2026-09-12: the site is the public face of The Storefront Index at
+// DVC, a student club. The former commercial surface is gone entirely — the
+// five "services", the founder pitch block, and the Calendly booking link were
+// deleted rather than reworded, because the club's constitution (Article II)
+// states it "does not provide services, advice, or recommendations to any
+// business, and charges no fees."
 //
-// The same SERVICES array feeds both the report CTA block and the public
-// /services pages, so the two can never drift apart.
-
-import { BRAND_NAME } from "./brand";
-
-export interface OfferService {
-  slug: string;
-  name: string;
-  /** One line. Used on the report CTA and the services index cards. */
-  description: string;
-  /** ~200 words for /services/[slug]. Each string is a paragraph. */
-  body: string[];
-}
-
-/**
- * The person on the other end of the booking link. Shown on the report CTA
- * so the button is attached to a face rather than to a company noun.
- * Deliberately says nothing about credentials — only what happens on the call.
- */
-export interface OfferFounder {
-  name: string;
-  role: string;
-  photo: string;
-  pitch: string[];
-}
+// What remains is a contact address. A business that wants its own results can
+// ask for them; nothing is offered to a business that has not asked.
 
 export interface OfferCopy {
-  // Shown when the report has fixes to recommend.
+  /** Closing block on the report. */
   headline: string;
   lead: string;
-  // Shown when everything passes.
-  perfectHeadline: string;
-  perfectLead: string;
-  // Standalone /services pages.
-  servicesHeadline: string;
-  servicesLead: string;
-  serviceCtaLine: string;
-  founder: OfferFounder;
-  services: OfferService[];
-  /** Shown beside every service in the report CTA block. Always "Free". */
-  serviceCostLabel: string;
-  /** Where that label goes when clicked — the booking link, never a checkout. */
-  serviceHref: string;
-  buttonLabel: string;
-  clubLine: string | null;
-  calendlyUrl: string;
+  /** Contact route for a business that wants its own results. */
+  contactEmail: string;
+  contactLine: string;
+  /** Footer / report attribution. */
+  clubLine: string;
+  instagramUrl: string;
+  instagramHandle: string;
 }
 
-const SERVICES: OfferService[] = [
-  {
-    slug: "done-for-you-fixes",
-    name: "Done-for-you fixes",
-    description:
-      "We implement your top fixes for you — you approve, we do the clicking.",
-    body: [
-      "Your report tells you what to fix and roughly how long each fix takes. Most owners agree with the list and then never get to it, because the list competes with running the business. This service closes that gap.",
-      "You send us the report. We go through the top fixes together on a short call, and you tell us which ones to handle. Then we do the work: hours added for all seven days, holiday hours set, the business category corrected, photos uploaded and captioned, the website link and phone number put back on your Google profile, a tappable phone link added to your site.",
-      "You keep control the whole way. We never change anything you have not approved, and we do not take ownership of your accounts — you stay the owner of your Google Business Profile, your domain, and your website login. If you cannot get into one of them, sorting that out is usually the first thing we do, because an account you cannot reach is a bigger problem than any single missing field.",
-      "When we are done we re-run the audit so you can see exactly what moved.",
-    ],
-  },
-  {
-    slug: "review-reply-drafter",
-    name: "Review reply drafter",
-    description: "Drafted responses to every review, in your business's voice.",
-    body: [
-      "Replying to reviews is one of the few things that helps on Google and also changes what a customer thinks when they read your page. A public reply to a bad review is not written for the person who left it. It is written for the next twenty people who read it.",
-      "Most owners know this and still do not reply, because writing a calm response to an unfair review at the end of a long day is hard, and because it has to be done again next week.",
-      "We draft the replies. First we read through your existing reviews to learn how you actually talk — short or warm, formal or familiar, English only or not. Then you get drafted responses for your backlog, and new drafts as new reviews come in.",
-      "Nothing is posted without you. Every draft comes to you to approve, edit, or throw out. You can change a draft and we will remember the change for next time.",
-      "We do not write fake reviews and we will not help you get any. That is against Google's rules and it is the fastest way to lose the profile you are trying to build.",
-    ],
-  },
-  {
-    slug: "ai-phone-agent",
-    name: "AI phone agent",
-    description:
-      "Answers calls when nobody can reach the phone — takes orders and bookings.",
-    body: [
-      "For a small shop, the phone rings at the worst possible time. You are with a customer, the line is out the door, the machine is running. The call goes unanswered, and most people who reach a busy signal do not call back — they call the next business on the list.",
-      "We set up a phone agent that picks up when you cannot. It answers in a voice you choose, in the languages your customers use. It knows your hours, your address, your parking situation, your prices, and the questions you get asked twenty times a week.",
-      "It can take an order or a booking, put it in your existing system, and text the customer a confirmation. When a call needs a real person, it says so and takes a message with a callback number instead of guessing.",
-      "You get a written record of every call, so you can see what people are actually asking for. Owners are often surprised by this part — the transcripts tend to show a question the business could answer once on its website and stop fielding forever.",
-      "You can turn it off for any hour of the day.",
-    ],
-  },
-  {
-    slug: "chat-widget",
-    name: "Website chat widget",
-    description: "Answers questions on your site and passes real leads to you.",
-    body: [
-      "Most people who land on a small business website have one question. What time do you close, do you take walk-ins, is there parking, do you do this particular thing. If the answer is not on the page, they leave and ask someone else — usually a competitor, sometimes an AI assistant that may not know your business either.",
-      "A chat widget puts the answer where the question happens. We set one up on your site, in your colours, and we fill it with the answers to what your customers actually ask. It knows your hours, your address, your services, and the handful of questions that come up over and over.",
-      "When someone asks something it cannot answer, it takes their name and number instead of dead-ending them, and that lands with you as a message. This is the part owners underestimate: an unanswered question on a website is a customer you never knew you had.",
-      "It works alongside the phone agent if you have both, drawing on the same answers, so you are not maintaining two versions of your hours. And you can read back every conversation, which tends to show a question worth answering on the page itself.",
-      "You can switch it off whenever you want, and nothing about it changes who owns your website.",
-    ],
-  },
-  {
-    slug: "competitor-benchmark",
-    name: "Competitor benchmark",
-    description: "How you rank against similar businesses in your area.",
-    body: [
-      "Your free report scores you against a fixed standard. That answers whether your listing is complete. It does not answer the question owners actually ask, which is whether you are ahead of or behind the shop four blocks away.",
-      "This is a different measurement. We pull the businesses in your category and your area that a customer would see next to you in search results, and we compare the numbers that decide who gets chosen: review count, star rating, how recently someone reviewed, photo count, how complete the profile is, and how fast the website loads on a phone.",
-      "You get a short document showing where you sit in that group, which specific gaps are costing you the most, and what the realistic target is. If the top business near you has ninety reviews and you have eleven, the useful number is not ninety — it is the number that gets you into consideration, and that is usually much lower than owners expect.",
-      "We rerun the benchmark later so you can see whether the gap actually closed. This is deliberately not part of the free report, because a one-time snapshot of your competitors is worth less than watching the distance change.",
-    ],
-  },
-];
+export const CONTACT_EMAIL = "storefrontindexdvc@gmail.com";
+export const INSTAGRAM_URL = "https://www.instagram.com/storefrontindexdvc/";
+export const INSTAGRAM_HANDLE = "@storefrontindexdvc";
 
 export function getOffers(): OfferCopy {
-  const calendlyUrl =
-    process.env.NEXT_PUBLIC_CALENDLY_URL ??
-    "https://calendly.com/michaelkosenko456/30min";
-
   return {
-    headline: "We'll help you fix these — free.",
-    lead: "Some improvements are bigger than a checklist. Our student advisors set these up with you:",
-    perfectHeadline: "Everything we check looks great.",
-    perfectLead:
-      "If you want to go further, we can set up automations that take work off your plate:",
-    servicesHeadline: "What our student advisors can do for you",
-    servicesLead:
-      "Everything below is free. Start with the visibility score — it tells us where to begin.",
-    serviceCtaLine:
-      "Not sure if this is what your business needs? Book a free session and we will look at your score together.",
-    founder: {
-      name: "Michael Kosenko",
-      role: `Founder, ${BRAND_NAME}`,
-      photo: "/michael.png",
-      pitch: [
-        "Hi — I am Michael. I study business at Diablo Valley College and UC Berkeley Haas, and I built this tool. A student advisor reads every report it produces, including yours.",
-        "Twenty minutes, over coffee or over video, whichever you prefer. We go through your score together, I tell you which fixes actually matter for a business like yours, and you leave with a short plan you can do yourself.",
-        "It is free, and it stays free. Bring your questions about anything on the report.",
-      ],
-    },
-    services: SERVICES,
-    serviceCostLabel: "Free",
-    serviceHref: calendlyUrl,
-    buttonLabel: "Book time with a student advisor",
+    headline: "Where this report comes from",
+    lead:
+      "The Storefront Index at DVC is a student club. We study how small businesses across the Bay Area appear online — search visibility, listing accuracy, and whether websites function — using only publicly available information, and publish a regional report each semester for city governments, chambers of commerce, and economic development offices.",
+    contactEmail: CONTACT_EMAIL,
+    contactLine:
+      "Questions about your results, or want them removed from our records? Email us.",
     clubLine:
-      "A student club at Diablo Valley College. Everything we do is free.",
-    calendlyUrl,
+      "A student club at Diablo Valley College. Nothing on this site is for sale.",
+    instagramUrl: INSTAGRAM_URL,
+    instagramHandle: INSTAGRAM_HANDLE,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Free-fix band on report page two.
-//
-// Every check scoring below 100 gets a band offering to have a student
-// advisor do the fix. It carries no price — the club does this for free —
-// and it links to the booking calendar, never to a checkout.
-// ---------------------------------------------------------------------------
-
-export type FixCostBucket = "minutes" | "hours" | "days" | "money";
-
-// ---------------------------------------------------------------------------
-// DEMO ONLY — fabricated point gains. Owner's call, 2026-08-11, for a class
-// demo. Set to false to restore the real numbers; nothing else needs editing.
-//
-// These are made up. The honest per-check gain is already computed by
-// scoreGainForCheck() in scoring/score-gain.ts, tested against a from-scratch
-// recomposition of the overall score, and still wired up behind this flag.
-// The real numbers on the current fixture range from 0.1 to 6.7 points, so a
-// flat gain per effort bucket both overstates the cheap checks and
-// understates the valuable ones.
-//
-// This contradicts rule 7 (never invent data) and rule 3 (honest confidence
-// labels), which is survivable in a pitch and not survivable in front of a
-// real owner or in the write-up. Flip it back before either.
-// ---------------------------------------------------------------------------
-const DEMO_FIXED_GAINS = true;
-
-const DEMO_GAIN_BY_BUCKET: Record<FixCostBucket, string> = {
-  minutes: "1 pt",
-  hours: "2 pts",
-  days: "4 pts",
-  money: "4 pts",
-};
-
-const DEMO_GAIN_FALLBACK = "2 pts";
-
-export interface FixOffer {
-  /** Band copy. */
-  label: string;
-  /** Always "Free". There is no paid tier. */
-  costLabel: string;
-  href: string;
-  /** "Adds 2.4 pts to your score", or null when the gain is unknown. */
-  gainNote: string | null;
-  /** Spoken by screen readers in place of the band's visual shorthand. */
-  ariaLabel: string;
-}
-
-/** `gain` is pre-formatted by formatGain() in scoring/score-gain.ts. */
-export function getFixOffer(
-  bucket: string | null | undefined,
-  checkLabel: string,
-  gain?: string | null
-): FixOffer {
-  const shownGain = DEMO_FIXED_GAINS
-    ? bucket && bucket in DEMO_GAIN_BY_BUCKET
-      ? DEMO_GAIN_BY_BUCKET[bucket as FixCostBucket]
-      : DEMO_GAIN_FALLBACK
-    : gain;
-  const gainNote = shownGain ? `Adds ${shownGain} to your score` : null;
-
-  return {
-    label: "Fix it now in 5 minutes!",
-    costLabel: "Free",
-    href:
-      process.env.NEXT_PUBLIC_CALENDLY_URL ??
-      "https://calendly.com/michaelkosenko456/30min",
-    gainNote,
-    ariaLabel: `Have a student advisor fix "${checkLabel}" for you, free${
-      shownGain ? `. Adds ${shownGain} to your score` : ""
-    }`,
-  };
-}
-
-export function getService(slug: string): OfferService | undefined {
-  return SERVICES.find((s) => s.slug === slug);
-}
-
-export function getServiceSlugs(): string[] {
-  return SERVICES.map((s) => s.slug);
 }

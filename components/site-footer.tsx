@@ -5,7 +5,7 @@ import { ARTICLES } from "@/lib/insights";
 import { getOffers } from "@/lib/offers";
 
 export default function SiteFooter() {
-  const { services, clubLine } = getOffers();
+  const { clubLine, contactEmail, instagramUrl, instagramHandle } = getOffers();
   const year = new Date().getFullYear();
 
   return (
@@ -14,19 +14,27 @@ export default function SiteFooter() {
         <div className="grid gap-8 sm:grid-cols-3">
           <div>
             <p className="font-mono text-xs uppercase tracking-wider text-muted">
-              Services
+              The club
             </p>
             <ul className="mt-3 space-y-2">
-              {services.map((s) => (
-                <li key={s.slug}>
-                  <Link
-                    href={`/services/${s.slug}`}
-                    className="text-sm text-muted hover:text-ink"
-                  >
-                    {s.name}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/about" className="text-sm text-muted hover:text-ink">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/" className="text-sm text-muted hover:text-ink">
+                  Check a business
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="text-sm text-muted hover:text-ink"
+                >
+                  Privacy
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -50,26 +58,26 @@ export default function SiteFooter() {
 
           <div>
             <p className="font-mono text-xs uppercase tracking-wider text-muted">
-              {BRAND_NAME}
+              Contact
             </p>
             <ul className="mt-3 space-y-2">
               <li>
-                <Link href="/about" className="text-sm text-muted hover:text-ink">
-                  About us
-                </Link>
+                <a
+                  href={`mailto:${contactEmail}`}
+                  className="text-sm text-muted hover:text-ink break-all"
+                >
+                  {contactEmail}
+                </a>
               </li>
               <li>
-                <Link href="/" className="text-sm text-muted hover:text-ink">
-                  Free visibility score
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy"
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted hover:text-ink"
                 >
-                  Privacy
-                </Link>
+                  Instagram {instagramHandle}
+                </a>
               </li>
             </ul>
           </div>
@@ -77,8 +85,8 @@ export default function SiteFooter() {
 
         <div className="mt-10 pt-6 border-t border-rule">
           <p className="font-mono text-xs text-muted leading-relaxed">
-            We only read public information — your Google listing and your
-            website. Nothing is changed or posted.
+            We only read public information — a business&apos;s Google listing
+            and its website. Nothing is changed or posted.
           </p>
           {clubLine && (
             <p className="mt-2 font-mono text-xs text-muted">{clubLine}</p>

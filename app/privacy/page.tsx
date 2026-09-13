@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { BRAND_NAME } from "@/lib/brand";
+import { CONTACT_EMAIL } from "@/lib/offers";
+
 export const metadata = { title: "Privacy" };
 
 export default function PrivacyPage() {
@@ -14,10 +17,10 @@ export default function PrivacyPage() {
         </h1>
         <div className="mt-4 space-y-4 leading-relaxed">
           <p>
-            <strong>Who we are.</strong> Main Street Project is a student club
-            at Diablo Valley College. This tool is free and always will be. We
-            are not paid by anyone, we sell nothing — not on this site and not
-            on the call — and no one pays us to rank higher.
+            <strong>Who we are.</strong> {BRAND_NAME} is a student club at
+            Diablo Valley College. This tool is free and always will be. We are
+            not paid by anyone, we sell nothing, we recommend no vendor, and no
+            one pays us to rank higher.
           </p>
           <p>
             <strong>What we collect.</strong> The email address you give us, and
@@ -44,7 +47,7 @@ export default function PrivacyPage() {
             address below. We don't sell or share your information with anyone.
           </p>
           <p className="font-mono text-sm text-muted">
-            Contact: michaelkosenko456@gmail.com
+            Contact: {CONTACT_EMAIL}
           </p>
         </div>
         <p className="mt-8">

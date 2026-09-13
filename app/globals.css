@@ -12,6 +12,7 @@
   /* Brand accent. Navigation, links, and marketing CTAs only.
      Never used for check status — that stays pass/warn/fail, which this
      colour sits close to (see --warn). */
+  --navy: #1b2a41;
   --accent: #c2410c;
   --accent-tint: #fdf1ea;
 
@@ -31,6 +32,7 @@
   --color-pass: var(--pass);
   --color-warn: var(--warn);
   --color-fail: var(--fail);
+  --color-navy: var(--navy);
   --color-accent: var(--accent);
   --color-accent-tint: var(--accent-tint);
   --color-offer: var(--offer);

@@ -1,12 +1,18 @@
-# Main Street Project — Web Presence Scorecard
+# The Storefront Index at DVC — Web Presence Scorecard
 
-Free audit software for **Main Street Project**, a student club at Diablo
-Valley College. It scores a local small business's online presence and returns
-a prioritized, one-page action report.
+The audit instrument behind **The Storefront Index at DVC**, a student club at
+Diablo Valley College. The club studies how small businesses across the San
+Francisco Bay Area appear online — search visibility, listing accuracy, and
+whether their websites function — using only publicly available information,
+and publishes a regional report each semester for city governments, chambers of
+commerce, and economic development offices.
 
-The service is free and always will be. Nothing is sold and nothing is
-charged — there is no pricing, no checkout, and no commercial mode anywhere in
-this codebase, by design rather than by configuration.
+This tool scores one business's online presence and returns a one-page report.
+
+Nothing here is for sale. No business is charged, no service is offered, and
+the club recommends no vendor — there is no pricing, no checkout, no booking
+link, and no commercial mode anywhere in this codebase, by design rather than
+by configuration. See `CLAUDE.md` §13.
 
 Built with Next.js, TypeScript, Tailwind CSS, Supabase, and the Google Places /
 PageSpeed Insights APIs.
@@ -27,3 +33,7 @@ Then open http://localhost:3000.
 
 Copy `.env.example` to `.env.local` and fill in values as each build phase
 requires them. Never commit `.env.local`.
+
+## Contact
+
+storefrontindexdvc@gmail.com · [@storefrontindexdvc](https://www.instagram.com/storefrontindexdvc/)

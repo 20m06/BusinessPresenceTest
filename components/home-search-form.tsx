@@ -63,7 +63,7 @@ export default function HomeSearchForm() {
               type="text"
               required
               autoComplete="address-level2"
-              placeholder="Rochester"
+              placeholder="Walnut Creek"
               className="mt-1 w-full bg-transparent text-lg placeholder:text-muted/50 focus:outline-none"
             />
           </div>
@@ -99,7 +99,7 @@ export default function HomeSearchForm() {
         type="submit"
         className="mt-4 w-full sm:w-auto px-8 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
       >
-        Check my business
+        Run the check
       </button>
 
       <p className="mt-3 font-mono text-xs text-muted">

@@ -13,7 +13,7 @@ interface Candidate {
 
 type State =
   | { kind: "loading" }
-  | { kind: "error"; message: string; calendly: boolean }
+  | { kind: "error"; message: string; capped: boolean }
   | { kind: "empty" }
   | { kind: "results"; candidates: Candidate[] };
 
@@ -27,11 +27,10 @@ function SearchingInner() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [selected, setSelected] = useState<string | null>(null);
 
-  const calendlyUrl = process.env.NEXT_PUBLIC_CALENDLY_URL;
 
   useEffect(() => {
     if (!name || !city || !stateAbbr) {
-      setState({ kind: "error", message: "Something was missing. Start the search again.", calendly: false });
+      setState({ kind: "error", message: "Something was missing. Start the search again.", capped: false });
       return;
     }
     let cancelled = false;
@@ -48,7 +47,7 @@ function SearchingInner() {
           setState({
             kind: "error",
             message: data.message ?? "Something went wrong. Try again in a minute.",
-            calendly: data.error === "capped",
+            capped: data.error === "capped",
           });
           return;
         }
@@ -59,7 +58,7 @@ function SearchingInner() {
         }
       } catch {
         if (!cancelled) {
-          setState({ kind: "error", message: "We couldn't reach the server. Check your connection and try again.", calendly: false });
+          setState({ kind: "error", message: "We couldn't reach the server. Check your connection and try again.", capped: false });
         }
       }
     })();
@@ -92,13 +91,11 @@ function SearchingInner() {
               That didn't work
             </h1>
             <p className="mt-3 text-muted">{state.message}</p>
-            {state.calendly && calendlyUrl && (
-              <a
-                href={calendlyUrl}
-                className="mt-4 inline-block px-6 py-3 bg-ink text-paper font-medium hover:bg-ink/90"
-              >
-                Book a call
-              </a>
+            {state.capped && (
+              <p className="mt-4 text-muted">
+                We cap how many checks run each day so the club stays inside
+                its budget. Try again tomorrow.
+              </p>
             )}
             <p className="mt-6">
               <Link href="/" className="underline underline-offset-4">
